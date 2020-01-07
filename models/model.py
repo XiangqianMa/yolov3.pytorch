@@ -176,6 +176,7 @@ def create_modules(module_defs, img_size, arc):
 if __name__ == '__main__':
     model_cfg_path = 'cfg/model_cfg/yolov3.cfg'
     model = Darknet(model_cfg_path, (416, 416))
+    model.eval()
     input = torch.ones([1, 3, 416, 416])
     output = model(input)
     pass
