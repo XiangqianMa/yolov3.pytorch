@@ -2,25 +2,34 @@ import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-from models.layers import YOLOLayer, Swish
+from torch.utils.data import DataLoader
+from models.layers import YOLOLayer
 from models.parse_model_cfg import parse_model_cfg
+from datasets.coco_dataset import COCODataset
+from datasets.data_augment import DataAugment
 
 
 class Darknet(nn.Module):
     # YOLOv3 object detection models
 
-    def __init__(self, cfg, img_size=(416, 416), arc='default'):
+    def __init__(self, cfg, img_size=(416, 416)):
         super(Darknet, self).__init__()
 
         self.module_defs = parse_model_cfg(cfg)
-        self.module_list, self.routs = create_modules(self.module_defs, img_size, arc)
+        self.module_list, self.routs = create_modules(self.module_defs, img_size)
         self.yolo_layers = get_yolo_layers(self)
 
         # Darknet Header https://github.com/AlexeyAB/darknet/issues/2914#issuecomment-496675346
         self.version = np.array([0, 2, 5], dtype=np.int32)  # (int32) version info: major, minor, revision
         self.seen = np.array([0], dtype=np.int64)  # (int64) number of images seen during training
 
-    def forward(self, x, var=None):
+    def forward(self, x):
+        """
+
+        Return:
+            训练时，返回：[[predict_bboxes, classes_probality, anchor_vector], ..], 用于计算损失
+            测试时，返回：[batch_size, number_all_anchors, number_classes+5], 用于得到最终的预测结果
+        """
         img_size = x.shape[-2:]
         layer_outputs = []
         output = []
@@ -36,34 +45,29 @@ class Darknet(nn.Module):
                 else:
                     try:
                         x = torch.cat([layer_outputs[i] for i in layers], 1)
-                    except:  # apply stride 2 for darknet reorg layer
+                    except:
                         layer_outputs[layers[1]] = F.interpolate(layer_outputs[layers[1]], scale_factor=[0.5, 0.5])
                         x = torch.cat([layer_outputs[i] for i in layers], 1)
-                    # print(''), [print(layer_outputs[i].shape) for i in layers], print(x.shape)
             elif mtype == 'shortcut':
                 x = x + layer_outputs[int(mdef['from'])]
             elif mtype == 'yolo':
                 x = module(x, img_size)
                 output.append(x)
             layer_outputs.append(x if i in self.routs else [])
-
-        if self.training:
-            return output
-        else:
-            io, p = list(zip(*output))  # inference output, training output
-            return torch.cat(io, 1), p
+        if not self.training:
+            output = torch.cat(output, dim=1)
+        return output
 
 
 def get_yolo_layers(model):
     return [i for i, x in enumerate(model.module_defs) if x['type'] == 'yolo']  # [82, 94, 106] for yolov3
 
 
-def create_modules(module_defs, img_size, arc):
+def create_modules(module_defs, img_size):
     """依据module_defs中的网络定义构建整个网络结构
 
     :param module_defs: 网络模块的定义
     :param img_size: 图像大小
-    :param arc:
     :return: module_list: 网络模块, routs: 路由到更深的层的层列表
     """
 
@@ -94,8 +98,6 @@ def create_modules(module_defs, img_size, arc):
             if mdef['activation'] == 'leaky':  # TODO: activation study https://github.com/ultralytics/yolov3/issues/441
                 modules.add_module('activation', nn.LeakyReLU(0.1, inplace=True))
                 # modules.add_module('activation', nn.PReLU(num_parameters=1, init=0.10))
-            elif mdef['activation'] == 'swish':
-                modules.add_module('activation', Swish())
 
         elif mdef['type'] == 'maxpool':
             size = int(mdef['size'])
@@ -114,8 +116,6 @@ def create_modules(module_defs, img_size, arc):
             layers = [int(x) for x in mdef['layers'].split(',')]
             filters = sum([output_filters[i + 1 if i > 0 else i] for i in layers])
             routs.extend([l if l > 0 else l + i for l in layers])
-            # if mdef[i+1]['type'] == 'reorg3d':
-            #     modules = nn.Upsample(scale_factor=1/float(mdef[i+1]['stride']), mode='nearest')  # reorg3d
 
         elif mdef['type'] == 'shortcut':  # nn.Sequential() placeholder for 'shortcut' layer
             filters = output_filters[int(mdef['from'])]
@@ -123,8 +123,6 @@ def create_modules(module_defs, img_size, arc):
             routs.extend([i + layer if layer < 0 else layer])
 
         elif mdef['type'] == 'reorg3d':  # yolov3-spp-pan-scale
-            # torch.Size([16, 128, 104, 104])
-            # torch.Size([16, 64, 208, 208]) <-- # stride 2 interpolate dimensions 2 and 3 to cat with prior layer
             pass
 
         elif mdef['type'] == 'yolo':
@@ -134,35 +132,7 @@ def create_modules(module_defs, img_size, arc):
                 anchors=mdef['anchors'][mask],
                 number_classes=int(mdef['classes']),
                 image_size=img_size,
-                yolo_index=yolo_index,
-                arc=arc)  # yolo architecture
-
-            # Initialize preceding Conv2d() bias (https://arxiv.org/pdf/1708.02002.pdf section 3.3)
-            try:
-                if arc == 'defaultpw' or arc == 'Fdefaultpw':  # default with positive weights
-                    b = [-4, -3.6]  # obj, cls
-                elif arc == 'default':  # default no pw (40 cls, 80 obj)
-                    b = [-5.5, -5.0]
-                elif arc == 'uBCE':  # unified BCE (80 classes)
-                    b = [0, -9.0]
-                elif arc == 'uCE':  # unified CE (1 background + 80 classes)
-                    b = [10, -0.1]
-                elif arc == 'Fdefault':  # Focal default no pw (28 cls, 21 obj, no pw)
-                    b = [-2.1, -1.8]
-                elif arc == 'uFBCE' or arc == 'uFBCEpw':  # unified FocalBCE (5120 obj, 80 classes)
-                    b = [0, -6.5]
-                elif arc == 'uFCE':  # unified FocalCE (64 cls, 1 background + 80 classes)
-                    b = [7.7, -1.1]
-
-                bias = module_list[-1][0].bias.view(len(mask), -1)  # 255 to 3x85
-                bias[:, 4] += b[0] - bias[:, 4].mean()  # obj
-                bias[:, 5:] += b[1] - bias[:, 5:].mean()  # cls
-                # bias = torch.load('weights/yolov3-spp.bias.pt')[yolo_index]  # list of tensors [3x85, 3x85, 3x85]
-                module_list[-1][0].bias = torch.nn.Parameter(bias.view(-1))
-                # utils.print_model_biases(models)
-            except:
-                print('WARNING: smart bias initialization failure.')
-
+                )  # yolo architecture
         else:
             print('Warning: Unrecognized Layer Type: ' + mdef['type'])
 
@@ -176,8 +146,16 @@ def create_modules(module_defs, img_size, arc):
 if __name__ == '__main__':
     model_cfg_path = 'cfg/model_cfg/yolov3.cfg'
     model = Darknet(model_cfg_path, (416, 416))
+    images_root = 'data/coco/val2017'
+    annotations_root = 'data/coco/val2017_txt'
+    image_size = 416
+    mean = (0.485, 0.456, 0.406)
+    std = (0.229, 0.224, 0.225)
+    data_augment = DataAugment()
+    dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
+    dataloader = DataLoader(dataset, 8, True, num_workers=8, pin_memory=True, collate_fn=dataset.collate_fn)
     model.eval()
-    input = torch.ones([1, 3, 416, 416])
-    output = model(input)
+    for _, images, targets in dataloader:
+        output = model(images)
     pass
 

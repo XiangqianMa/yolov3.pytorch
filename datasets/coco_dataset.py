@@ -37,8 +37,10 @@ class COCODataset(Dataset):
     def __getitem__(self, index):
         """
         Return:
+            image_path: 图片路径
             image: 样本图片
-            categories_id_bboxes: numpy.array, [[category_id, x, y, w, h], ...]
+            categories_id_bboxes: numpy.array, [[category_id, sample_id, x, y, w, h], ...], 
+                                  sample_id为当前样本在batch中的编号
         """
         image_path = self.images_list[index]
         annotation_path = os.path.join(self.annotations_root, image_path.split('/')[-1].replace('jpg', 'txt'))
@@ -53,11 +55,27 @@ class COCODataset(Dataset):
             ]
         )
         image = transform_compose(image)
-        categories_id_bboxes = np.zeros((len(bboxes), 5))
-        categories_id_bboxes[:, 1:] = np.asarray(bboxes)
-        categories_id_bboxes[:, :1] = np.asarray(categories_id).reshape(-1, 1)
+        # categories_id_bboxes[:, 0]用于存放当前样本在batch中的编号
+        categories_id_bboxes = torch.zeros((len(bboxes), 6))
+        categories_id_bboxes[:, 2:] = torch.Tensor(bboxes)
+        categories_id_bboxes[:, 1] = torch.Tensor(categories_id)
 
-        return image, categories_id_bboxes
+        return image_path, image, categories_id_bboxes
+    
+    def collate_fn(self, batch):
+        """将每一个batch中的所有bboxes在第0维进行拼接，其目的是为了方便后续步骤的计算
+
+        Args:
+            batch: 
+        """
+        paths, images, targets = list(zip(*batch))
+        targets = [categories_id_bboxes for categories_id_bboxes in targets if categories_id_bboxes is not None]
+        for sample_index, categories_id_bboxes in enumerate(targets):
+            categories_id_bboxes[:, 0] = sample_index
+        # 将一个batch中的所有样本的bboxs都在第0维进行拼接, 每个bbox所属的样本由其下标为0的位置的数表示
+        targets = torch.cat(targets, dim=0)
+        images = torch.stack(images)
+        return paths, images, targets
 
     def __prepare_images_list__(self):
         annotations_files = os.listdir(self.annotations_root)
@@ -96,5 +114,5 @@ if __name__ == '__main__':
     data_augment = DataAugment()
     dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
     for i in range(len(dataset)):
-        image, targets = dataset[i]
+        _, image, targets = dataset[i]
     pass
