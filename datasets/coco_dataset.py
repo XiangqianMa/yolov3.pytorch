@@ -1,3 +1,7 @@
+#
+# 数据集解析文件
+# Author: XiangqianMa
+#
 import torch
 import os
 import json
@@ -31,11 +35,16 @@ class COCODataset(Dataset):
         self.transforms = transforms
 
     def __getitem__(self, index):
+        """
+        Return:
+            image: 样本图片
+            categories_id_bboxes: numpy.array, [[category_id, x, y, w, h], ...]
+        """
         image_path = self.images_list[index]
         annotation_path = os.path.join(self.annotations_root, image_path.split('/')[-1].replace('jpg', 'txt'))
         image = Image.open(image_path).convert("RGB")
         categories_id, bboxes = self.__parse_annotation_txt__(annotation_path)
-        image, bboxes, categories_id = self.transforms(image, bboxes, categories_id, image.size[0], image.size[1])
+        image, bboxes, categories_id = self.transforms(image, bboxes, categories_id)
 
         transform_compose = T.Compose(
             [
@@ -44,8 +53,11 @@ class COCODataset(Dataset):
             ]
         )
         image = transform_compose(image)
+        categories_id_bboxes = np.zeros((len(bboxes), 5))
+        categories_id_bboxes[:, 1:] = np.asarray(bboxes)
+        categories_id_bboxes[:, :1] = np.asarray(categories_id).reshape(-1, 1)
 
-        return image, bboxes, categories_id
+        return image, categories_id_bboxes
 
     def __prepare_images_list__(self):
         annotations_files = os.listdir(self.annotations_root)
@@ -84,5 +96,5 @@ if __name__ == '__main__':
     data_augment = DataAugment()
     dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
     for i in range(len(dataset)):
-        image, bboxes, categories_id = dataset[i]
+        image, targets = dataset[i]
     pass

@@ -14,7 +14,7 @@ from albumentations import (
 )
 
 from utils.visualize import visualize
-from utils.bbox_convert import center_to_upleft
+from utils.bbox_convert import center_to_upleft, upleft_to_center
 
 
 class DataAugment(object):
@@ -28,7 +28,20 @@ class DataAugment(object):
         self.min_visibility = min_visibility
         self.augmentation = self.__get_aug__()
     
-    def __call__(self, image, bboxes, category_id, image_width, image_height):
+    def __call__(self, image, bboxes, category_id):
+        """对输入的样本图片和bboxes进行增强
+
+        Args:
+            image: 样本图片, Image格式
+            bboxes: 对应的目标框, 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
+            category_id: bboxes中各个目标框对应的类别id, [0, 1, ...]
+        Return:
+            image_augmented: 增强后的图片, Image格式
+            bboxes_augmented: 增强后的目标框， 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
+            category_id_augmented: 各个目标框对应的类别id， [0, 1, ...]
+        """
+        image_width = image.size[0]
+        image_height = image.size[1]
         image = np.asarray(image)
         bboxes_converted = []
 
@@ -45,13 +58,22 @@ class DataAugment(object):
             'bboxes': bboxes_converted,
             'category_id': category_id_converted
         }
-
+        # with open('data/coco/categories_id_to_name.json', 'r') as f:
+        #     categories_id_to_name = json.load(f)
         augmented = self.augmentation(**annotations)
-        image = Image.fromarray(augmented['image'])
-        bboxes = augmented['bboxes']
-        category_id = augmented['category_id']
+        # visualize(augmented, categories_id_to_name)
+        image_augmented = Image.fromarray(augmented['image'])
+        bboxes_augmented = augmented['bboxes']
+        for bbox_index, bbox_agumented in enumerate(bboxes_augmented):
+            center_x_augmented, center_y_augmented, width_augmented, height_augmented = upleft_to_center(
+                 bbox_agumented[0], bbox_agumented[1], 
+                 bbox_agumented[2], bbox_agumented[3], 
+                 image_augmented.size[0], image_augmented.size[1])
+            bboxes_augmented[bbox_index] = [center_x_augmented, center_y_augmented, width_augmented, height_augmented]
 
-        return image, bboxes, category_id
+        category_id_augmented = augmented['category_id']
+
+        return image_augmented, bboxes_augmented, category_id_augmented
 
     def __get_aug__(self):
         return Compose(self.aug, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
