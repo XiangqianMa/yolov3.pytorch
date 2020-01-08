@@ -56,7 +56,15 @@ def prepare_coco_annotations(annotation_file):
     return images_to_annotations, images_to_width_height, categories_id_to_name
 
 
-def annotations_to_txt(images_to_annotations, images_to_width_height, categories_id_to_name, txt_folder, categories_name_to_id_json):
+def annotations_to_txt(
+    images_to_annotations, 
+    images_to_width_height, 
+    categories_id_to_name, 
+    txt_folder, 
+    categories_name_to_id_json, 
+    categories_id_to_name_json
+    ):
+
     """将各个图片文件对应的标注信息转换为yolo的格式，并写入txt文件中
 
     Args:
@@ -80,11 +88,11 @@ def annotations_to_txt(images_to_annotations, images_to_width_height, categories
                 category_name = categories_id_to_name[bbox[0]]
                 bbox_xywh = bbox[1]
                 center_x_ratio, center_y_ratio, width_ratio, height_ratio = upleft_to_center(
-                    bbox_xywh[0], 
-                    bbox_xywh[1], 
-                    bbox_xywh[2], 
-                    bbox_xywh[3], 
-                    image_width, 
+                    bbox_xywh[0],
+                    bbox_xywh[1],
+                    bbox_xywh[2],
+                    bbox_xywh[3],
+                    image_width,
                     image_height)
                 category_id = categories_name_to_id[category_name]
                 annotation_line = \
@@ -98,12 +106,19 @@ def annotations_to_txt(images_to_annotations, images_to_width_height, categories
     with open(categories_name_to_id_json, 'w') as f:
         print('@ Writing categories_name_to_id to %s' % categories_name_to_id_json)
         json.dump(categories_name_to_id, f)
+    categories_id_to_name = {}
+    for key, value in categories_name_to_id.items():
+        categories_id_to_name[int(value)] = key
+    with open(categories_id_to_name_json, 'w') as f:
+        print('@ Writing categories_id_to_name_json to %s' % categories_id_to_name_json)
+        json.dump(categories_id_to_name, f)
 
 
 if __name__ == '__main__':
     train_annotation = 'data/coco/annotations_trainval2017/instances_val2017.json'
     annotation_txt_folder = 'data/coco/val2017_txt'
     categories_name_to_id_json = 'data/coco/categories_name_to_id.json'
+    categories_id_to_name_json = 'data/coco/categories_id_to_name.json'
     images_to_annotations, images_to_width_height, categories_id_to_name = prepare_coco_annotations(train_annotation)
-    annotations_to_txt(images_to_annotations, images_to_width_height, categories_id_to_name, annotation_txt_folder, categories_name_to_id_json)
+    annotations_to_txt(images_to_annotations, images_to_width_height, categories_id_to_name, annotation_txt_folder, categories_name_to_id_json, categories_id_to_name_json)
     pass
