@@ -35,7 +35,16 @@ class YOLOLayer(nn.Module):
 
         :param feature: 输入特征图
         :param image_size: 原始输入图片的大小
-        :return: 训练时返回 [predict_bboxes, classes_probality, anchor_vector], 依次对应预测框的坐标、类别概率、使用stride归一化后的anchor
+        :return: 训练时返回 [
+            predict_bboxes,  依次对应预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
+            classes_probality, 类别概率
+            anchor_vector, 使用stride归一化后的anchor
+            center_x, 中心点x坐标，相对于cell左上角的偏移值
+            center_y, 中心点y坐标，相对于cell左上角的偏移值
+            width, 宽度, log数据
+            height, 宽度，log数据
+            confidence, 目标置信度       
+            ], 
                  测试时返回 predict, 所有的预测框，[batch_size, number_of_all_anchors, number_classes+5], 
                  number_of_all_anchors = grid_x * grid_y * number_anchors (每一个cell的anchor数目，默认为3)
         """
@@ -72,7 +81,16 @@ class YOLOLayer(nn.Module):
         )
 
         if self.training:
-            output = [predict_bboxes, classes_probality, self.anchor_vector]
+            output = [
+                predict_bboxes, 
+                classes_probality, 
+                self.anchor_vector, 
+                center_x, 
+                center_y, 
+                width, 
+                height, 
+                confidence
+                ]
         else:
             output = predict
         return output

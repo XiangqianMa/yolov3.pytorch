@@ -47,3 +47,7 @@ class MetricTracker:
     
     def result(self):
         return dict(self._data.average)
+
+
+def to_cpu(tensor):
+    return tensor.detach().cpu()

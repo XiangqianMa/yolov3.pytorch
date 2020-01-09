@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
 from utils.calculate_iou import bbox_wh_iou, bbox_iou
+from utils.util import to_cpu
 
 
 def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
@@ -34,8 +35,8 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
         target_cls: 真实边界框对应的类别，与每一个anchor对应 
         target_confidence: 是否存在目标，与每一个anchor对应
     """
-    ByteTensor = torch.cuda.ByteTensor if pred_boxes.is_cuda else torch.ByteTensor
-    FloatTensor = torch.cuda.FloatTensor if pred_boxes.is_cuda else torch.FloatTensor
+    BoolTensor = torch.cuda.BoolTensor if pred_boxes.is_cuda else torch.BoolTensor
+    FloatTensor = torch.cuda.BoolTensor if pred_boxes.is_cuda else torch.FloatTensor
 
     # 尺寸信息
     batch_size = pred_boxes.size(0)
@@ -45,8 +46,8 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 
     # output tensors
     # 掩膜
-    object_mask = ByteTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
-    noobject_mask = ByteTensor(batch_size, number_anchor, number_grid, number_grid).fill_(1)
+    object_mask = BoolTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
+    noobject_mask = BoolTensor(batch_size, number_anchor, number_grid, number_grid).fill_(1)
     class_mask = FloatTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
     iou_scores = FloatTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
     # 真实target
@@ -54,7 +55,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
     target_y = FloatTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
     target_w = FloatTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
     target_h = FloatTensor(batch_size, number_anchor, number_grid, number_grid).fill_(0)
-    target_cls = FloatTensor(batch_size, number_anchor, number_grid, number_classes).fill_(0)
+    target_cls = FloatTensor(batch_size, number_anchor, number_grid, number_grid, number_classes).fill_(0)
 
     # 将真实标定target转换为相对于box的位置
     target_bboxes = target[:, 2:6] * number_grid
@@ -88,3 +89,84 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 
     target_confidence = object_mask.float()
     return iou_scores, class_mask, object_mask, noobject_mask, target_x, target_y, target_w, target_h, target_cls, target_confidence
+
+
+class YOLOLoss(nn.Module):
+    """计算损失，并打印统计参数
+    """
+    def __init__(self, ignore_thres):
+        """
+        
+        Args:
+            ignore_thres: 当anchor与target的iou高于该阈值时，才认为该anchor存在目标
+        """
+        super(YOLOLoss, self).__init__()
+        self.mse_loss = nn.MSELoss()
+        self.bce_loss = nn.BCELoss()
+        self.object_scale = 1
+        self.noobject_scale = 100
+        self.ignore_thres = ignore_thres
+        self.metric = []
+    
+    def forward(self, predicts, targets):
+        loss = 0
+        # 对yololayer的输出依次计算损失
+        for predict in predicts:
+            predict_bboxes = predict[0]
+            classes_probablity = predict[1]
+            anchor_vector = predict[2] 
+            center_x = predict[3] 
+            center_y = predict[4]
+            width = predict[5]
+            height = predict[6] 
+            confidence = predict[7]
+
+            iou_scores, class_mask, object_mask, noobject_mask, target_x, target_y, target_w, target_h, target_classes, target_confidence = build_targets(
+                pred_boxes=predict_bboxes,
+                pred_cls=classes_probablity,
+                target=targets,
+                anchors=anchor_vector,
+                ignore_thres=self.ignore_thres,
+            )
+
+            # Loss: 在计算定位损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
+            loss_x = self.mse_loss(center_x[object_mask], target_x[object_mask])
+            loss_y = self.mse_loss(center_y[object_mask], target_y[object_mask])
+            loss_w = self.mse_loss(width[object_mask], target_w[object_mask])
+            loss_h = self.mse_loss(height[object_mask], target_h[object_mask])
+            loss_conf_object = self.bce_loss(confidence[object_mask], target_confidence[object_mask])
+            loss_conf_noobject = self.bce_loss(confidence[noobject_mask], target_confidence[noobject_mask])
+            loss_conf = self.object_scale * loss_conf_object + self.noobject_scale * loss_conf_noobject
+            loss_cls = self.bce_loss(classes_probablity[object_mask], target_classes[object_mask])
+            current_total_loss = loss_x + loss_y + loss_w + loss_h + loss_conf + loss_cls
+
+            # 性能指标
+            class_accuracy = 100 * class_mask[object_mask].mean()
+            confidence_obj = confidence[object_mask].mean()
+            confidence_noobject = confidence[noobject_mask].mean()
+            confidenct_50 = (confidence > 0.5).float()
+            iou_50 = (iou_scores > 0.5).float()
+            iou_75 = (iou_scores > 0.75).float()
+            detected_mask = confidenct_50 * class_mask * target_confidence
+            precision = torch.sum(iou_50 * detected_mask) / (confidenct_50.sum() + 1e-16)
+            recall50 = torch.sum(iou_50 * detected_mask) / (object_mask.sum() + 1e-16)
+            recall75 = torch.sum(iou_75 * detected_mask) / (object_mask.sum() + 1e-16)
+
+            self.metric.append({
+                "loss": to_cpu(current_total_loss).item(),
+                "x": to_cpu(loss_x).item(),
+                "y": to_cpu(loss_y).item(),
+                "w": to_cpu(loss_w).item(),
+                "h": to_cpu(loss_h).item(),
+                "conf": to_cpu(loss_conf).item(),
+                "cls": to_cpu(loss_cls).item(),
+                "cls_acc": to_cpu(class_accuracy).item(),
+                "recall50": to_cpu(recall50).item(),
+                "recall75": to_cpu(recall75).item(),
+                "precision": to_cpu(precision).item(),
+                "conf_obj": to_cpu(confidence_obj).item(),
+                "conf_noobj": to_cpu(confidence_noobject).item(),
+            })
+
+            loss += current_total_loss
+        return loss

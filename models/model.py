@@ -7,6 +7,7 @@ from models.layers import YOLOLayer
 from models.parse_model_cfg import parse_model_cfg
 from datasets.coco_dataset import COCODataset
 from datasets.data_augment import DataAugment
+from losses.yolo_loss import YOLOLoss
 
 
 class Darknet(nn.Module):
@@ -154,8 +155,15 @@ if __name__ == '__main__':
     data_augment = DataAugment()
     dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
     dataloader = DataLoader(dataset, 8, True, num_workers=8, pin_memory=True, collate_fn=dataset.collate_fn)
-    model.eval()
+    criterion = YOLOLoss(0.5)
+    optimizer = torch.optim.Adam(model.parameters())
+    model.train()
     for _, images, targets in dataloader:
         output = model(images)
+        loss = criterion(output, targets)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        print(loss.item())
     pass
 
