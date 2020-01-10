@@ -9,6 +9,7 @@ from models.parse_model_cfg import parse_model_cfg
 from datasets.coco_dataset import COCODataset
 from datasets.data_augment import DataAugment
 from losses.yolo_loss import YOLOLoss
+from losses.get_loss import GetLoss
 
 
 class Darknet(nn.Module):
@@ -217,9 +218,9 @@ if __name__ == '__main__':
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     data_augment = DataAugment()
-    dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
+    dataset = COCODataset(images_root, annotations_root, mean, std, data_augment)
     dataloader = DataLoader(dataset, 8, True, num_workers=8, pin_memory=True, collate_fn=dataset.collate_fn)
-    criterion = YOLOLoss(0.5)
+    criterion = GetLoss()
     model = Darknet(model_cfg_path, (416, 416))
     load_darknet_weights(model, weight_path)
     optimizer = torch.optim.Adam(model.parameters())

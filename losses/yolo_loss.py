@@ -94,7 +94,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 class YOLOLoss(nn.Module):
     """计算损失，并打印统计参数
     """
-    def __init__(self, ignore_thres):
+    def __init__(self, ignore_thres, object_scale=1, noobject_scale=100):
         """
         
         Args:
@@ -103,8 +103,8 @@ class YOLOLoss(nn.Module):
         super(YOLOLoss, self).__init__()
         self.mse_loss = nn.MSELoss()
         self.bce_loss = nn.BCELoss()
-        self.object_scale = 1
-        self.noobject_scale = 100
+        self.object_scale = object_scale
+        self.noobject_scale = noobject_scale
         self.ignore_thres = ignore_thres
         self.metric = []
     
