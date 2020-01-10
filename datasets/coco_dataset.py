@@ -15,12 +15,11 @@ from datasets.data_augment import DataAugment
 
 
 class COCODataset(Dataset):
-    def __init__(self, images_root, annotations_root, image_size, mean, std, transforms=None):
+    def __init__(self, images_root, annotations_root, mean, std, transforms=None):
         """
         Args:
             images_root: 存放原始图片的根目录
             annotations_root: 存放标注文件的根目录
-            image_size: resize后的图片大小
             mean: 通道均值
             std: 通道方差
             transforms: 图片与bbox的转换方式
@@ -29,7 +28,6 @@ class COCODataset(Dataset):
         self.annotations_root = annotations_root
         self.images_list = self.__prepare_images_list__()
         
-        self.image_size = image_size
         self.mean = mean
         self.std = std
         self.transforms = transforms
@@ -112,7 +110,7 @@ if __name__ == '__main__':
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     data_augment = DataAugment()
-    dataset = COCODataset(images_root, annotations_root, image_size, mean, std, data_augment)
+    dataset = COCODataset(images_root, annotations_root, mean, std, data_augment)
     for i in range(len(dataset)):
         _, image, targets = dataset[i]
     pass

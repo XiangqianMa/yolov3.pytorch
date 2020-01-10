@@ -3,6 +3,7 @@
 #
 import json
 import numpy as np
+import albumentations
 from PIL import Image
 from albumentations import (
     BboxParams,
@@ -21,9 +22,7 @@ from utils.bbox_convert import center_to_upleft, upleft_to_center
 
 
 class DataAugment(object):
-    def __init__(self, aug=[HorizontalFlip(p=0.5), VerticalFlip(p=0.5),
-                            Resize(height=416, width=416, always_apply=True)],
-                 dataset_format='coco', min_area=0., min_visibility=0.):
+    def __init__(self, aug={'Resize': {'height': 416, 'width':416, 'always_apply': True}}, dataset_format='coco', min_area=0., min_visibility=0.):
 
         self.aug = aug
         self.dataset_format = dataset_format
@@ -79,7 +78,21 @@ class DataAugment(object):
         return image_augmented, bboxes_augmented, category_id_augmented
 
     def __get_aug__(self):
-        return Compose(self.aug, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
+        augment = []
+        for aug_name, aug_param in self.aug.items():
+            current_augment = []
+            if aug_name == 'Resize':
+                assert ('height' in aug_param and 'width' in aug_param and 'always_apply' in aug_param)
+                current_augment = Resize(height=aug_param['height'], width=aug_param['width'], always_apply=aug_param['always_apply'])
+            elif aug_name == 'HorizontalFlip':
+                assert ('p' in aug_param)
+                current_augment = HorizontalFlip(p=aug_param['p'])
+            elif aug_name == 'VerticalFlip':
+                assert ('p' in aug_param)
+                current_augment = VerticalFlip(p=aug_param['p'])
+            augment.append(current_augment)
+        
+        return Compose(augment, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
                                                         min_visibility=self.min_visibility,
                                                         label_fields=['category_id']))
 
