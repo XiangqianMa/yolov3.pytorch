@@ -36,18 +36,20 @@ class YOLOLayer(nn.Module):
         :param feature: 输入特征图
         :param image_size: 原始输入图片的大小
         :return: 训练时返回 [
-            predict_bboxes,  依次对应预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
-            classes_probality, 类别概率
-            anchor_vector, 使用stride归一化后的anchor
-            center_x, 中心点x坐标，相对于cell左上角的偏移值
-            center_y, 中心点y坐标，相对于cell左上角的偏移值
-            width, 宽度, log数据
-            height, 宽度，log数据
-            confidence, 目标置信度       
-            ], 
+                    predict_bboxes,  依次对应预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
+                    classes_probality, 类别概率
+                    anchor_vector, 使用stride归一化后的anchor
+                    center_x, 中心点x坐标，相对于cell左上角的偏移值
+                    center_y, 中心点y坐标，相对于cell左上角的偏移值
+                    width, 宽度, log数据
+                    height, 宽度，log数据
+                    confidence, 目标置信度       
+                    ], 
                  测试时返回 predict, 所有的预测框，[batch_size, number_of_all_anchors, number_classes+5], 
                  number_of_all_anchors = grid_x * grid_y * number_anchors (每一个cell的anchor数目，默认为3)
         """
+        FloatTensor = torch.cuda.FloatTensor if feature.is_cuda else torch.FloatTensor
+        
         batch_size, _, number_y_grid, number_x_grid = feature.size()
         if (self.number_x_grid, self.number_y_grid) != (number_x_grid, number_y_grid):
             self.create_grid(image_size, (number_x_grid, number_y_grid), feature.device, feature.dtype)
@@ -66,7 +68,7 @@ class YOLOLayer(nn.Module):
         # 各个类别的概率
         classes_probality = torch.sigmoid(feature[..., 5:])
         # 向预测的bboxes的中心坐标加上偏移，向宽、高乘以尺度
-        predict_bboxes = torch.FloatTensor(feature[..., :4].shape)
+        predict_bboxes = FloatTensor(feature[..., :4].shape)
         predict_bboxes[..., 0] = center_x.data + self.grid_xy[..., 0]
         predict_bboxes[..., 1] = center_y.data + self.grid_xy[..., 1]
         predict_bboxes[..., 2] = torch.exp(width.data) * self.anchor_wh[..., 0]

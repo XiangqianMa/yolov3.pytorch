@@ -36,7 +36,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
         target_confidence: 是否存在目标，与每一个anchor对应
     """
     BoolTensor = torch.cuda.BoolTensor if pred_boxes.is_cuda else torch.BoolTensor
-    FloatTensor = torch.cuda.BoolTensor if pred_boxes.is_cuda else torch.FloatTensor
+    FloatTensor = torch.cuda.FloatTensor if pred_boxes.is_cuda else torch.FloatTensor
 
     # 尺寸信息
     batch_size = pred_boxes.size(0)
