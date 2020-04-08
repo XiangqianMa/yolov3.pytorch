@@ -36,11 +36,11 @@ class YOLOLayer(nn.Module):
         :param feature: 输入特征图
         :param image_size: 原始输入图片的大小
         :return: 训练时返回 [
-                    predict_bboxes,  依次对应预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
+                    predict_bboxes,  预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
                     classes_probality, 类别概率
                     anchor_vector, 使用stride归一化后的anchor
-                    center_x, 中心点x坐标，相对于cell左上角的偏移值
-                    center_y, 中心点y坐标，相对于cell左上角的偏移值
+                    center_x, 预测的原始中心点x坐标（相对于cell左上角的偏移值）
+                    center_y, 预测的原始中心点y坐标（相对于cell左上角的偏移值）
                     width, 宽度, log数据
                     height, 宽度，log数据
                     confidence, 目标置信度       

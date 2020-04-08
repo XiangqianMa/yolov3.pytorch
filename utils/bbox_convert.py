@@ -8,7 +8,7 @@ def upleft_to_center(x_axis, y_axis, width, height, image_width, image_height):
         y_axis: y轴坐标
         width: 宽度
         height: 高度
-        image_widht: 图片宽度
+        image_width: 图片宽度
         image_height: 图片高度
     Return:
         center_x_ratio: 中心坐标x，相对于图片宽度的比例

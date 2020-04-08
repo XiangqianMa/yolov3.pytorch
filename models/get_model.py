@@ -1,3 +1,4 @@
+import torch
 from models.darknet import Darknet
 from models.darknet import load_darknet_weights
 
@@ -7,17 +8,16 @@ class GetModel(object):
         self.model_type = model_type
         self.__logger__()
 
-    def get_model(self, cfg={'cfg': '', 'image_size': 416}, pretrained_weight=None):
+    def get_model(self, model_cfg, image_size, pretrained_weight=None):
         if self.model_type == 'darknet':
-            assert ('cfg' in cfg.keys() and 'image_size' in cfg.keys())
-            model = Darknet(cfg['cfg'], cfg['image_size'])
+            model = Darknet(model_cfg, image_size)
         else:
             raise NotImplementedError
         
         if pretrained_weight is not None:
             print('@ Loading from %s' % pretrained_weight)
             load_darknet_weights(model, pretrained_weight)
-
+        model = torch.nn.DataParallel(model).cuda()
         return model
     
     def __logger__(self):

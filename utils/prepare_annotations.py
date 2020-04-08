@@ -115,8 +115,8 @@ def annotations_to_txt(
 
 
 if __name__ == '__main__':
-    train_annotation = 'data/coco/annotations_trainval2017/instances_train2017.json'
-    annotation_txt_folder = 'data/coco/train2017_txt'
+    train_annotation = 'data/coco/annotations/instances_val2017.json'
+    annotation_txt_folder = 'data/coco/val2017_txt'
     categories_name_to_id_json = 'data/coco/categories_name_to_id.json'
     categories_id_to_name_json = 'data/coco/categories_id_to_name.json'
     images_to_annotations, images_to_width_height, categories_id_to_name = prepare_coco_annotations(train_annotation)

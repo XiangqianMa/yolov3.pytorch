@@ -22,7 +22,7 @@ from utils.bbox_convert import center_to_upleft, upleft_to_center
 
 
 class DataAugment(object):
-    def __init__(self, aug={'Resize': {'height': 416, 'width':416, 'always_apply': True}}, dataset_format='coco', min_area=0., min_visibility=0.):
+    def __init__(self, aug={'Resize': {'height': 416, 'width': 416, 'always_apply': True}}, dataset_format='coco', min_area=0., min_visibility=0.):
 
         self.aug = aug
         self.dataset_format = dataset_format
@@ -95,5 +95,3 @@ class DataAugment(object):
         return Compose(augment, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
                                                         min_visibility=self.min_visibility,
                                                         label_fields=['category_id']))
-
-

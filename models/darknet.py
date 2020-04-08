@@ -147,7 +147,7 @@ def create_modules(module_defs, img_size):
 
 
 def load_darknet_weights(model, weights, cutoff=-1):
-    """加载官方提供对的weight
+    """加载官方提供的weight
 
     Args:
         weights: 权重文件的路径

@@ -1,27 +1,31 @@
 {
     "model_type": "darknet",
     "model_cfg": "cfg/model_cfg/yolov3.cfg",
-    "pretrain_weight": "checkpoints/official_weights/darknet53.conv.74",
+    "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
+    "image_size": [416, 416],
 
     "optimizer": "Adam",
     "lr": 1e-3,
-    "weight_decay": "1e-4",
+    "weight_decay": 1e-4,
 
-    "loss_type": 
+    "loss_type":
     {
-       "object_scale": 1,
-       "noobject_scale": 100,
-       "ignore_thresh": 0.5 
+        "yolo_loss":
+            {
+                "object_scale": 1,
+                "noobject_scale": 100,
+                "ignore_thresh": 0.5
+            }
     },
     "loss_weights": [1.0],
 
     "lr_scheduler_type": "StepLR",
-    "step_size": "50",
+    "step_size": 50,
     "restart_step": null,
     "multi_step": null,
     
-    "train_images_root": "data/coco/train2017/train2017",
-    "train_annotations_root": "data/coco/train2017_txt",
+    "train_images_root": "data/coco/val2017",
+    "train_annotations_root": "data/coco/val2017_txt",
     "val_images_root": "data/coco/val2017",
     "val_annotations_root": "data/coco/val2017_txt",
     "mean": [0.485, 0.456, 0.406],

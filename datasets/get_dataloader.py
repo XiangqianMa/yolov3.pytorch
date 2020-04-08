@@ -48,8 +48,8 @@ class GetDataLoader(object):
 
 
 if __name__ == '__main__':
-    train_root = 'data/coco/train2017/train2017'
-    train_annotation_root = 'data/coco/train2017_txt'
+    train_root = 'data/coco/val2017'
+    train_annotation_root = 'data/coco/val2017_txt'
     val_root = 'data/coco/val2017'
     val_annotation_root = 'data/coco/val2017_txt'
     get_dataloader = GetDataLoader(train_root, train_annotation_root, val_root, val_annotation_root)

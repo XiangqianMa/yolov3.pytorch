@@ -4,7 +4,7 @@ from torchvision.utils import make_grid
 from utils import inf_loop, MetricTracker
 
 
-class TrainVal():
+class Solver:
     """
     Train and val class
     """
@@ -25,7 +25,7 @@ class TrainVal():
         self.config = config
         self.lr_scheduler = lr_scheduler
 
-    def _train_epoch(self, epoch):
+    def train_epoch(self, epoch):
         """
         Training logic for an epoch
 
@@ -33,15 +33,16 @@ class TrainVal():
         :return: A log that contains average loss and metric in this epoch.
         """
         self.model.train()
-        
-        for batch_idx, (data, target) in enumerate(self.data_loader):
+
+        for _, data, target in self.data_loader:
             data, target = data.to(self.device), target.to(self.device)
 
-            self.optimizer.zero_grad()
             output = self.model(data)
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
+            self.optimizer.zero_grad()
+            print(loss.item())
 
         if self.do_validation:
             self._valid_epoch(epoch)
@@ -49,7 +50,7 @@ class TrainVal():
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
-    def _valid_epoch(self, epoch):
+    def valid_epoch(self, epoch):
         """
         Validate after training an epoch
 
