@@ -1,14 +1,15 @@
 import numpy as np
 import torch
+import tqdm
 from torchvision.utils import make_grid
 from utils import inf_loop, MetricTracker
 
 
 class Solver:
     """
-    Train and val class
+    完成训练、验证、中间结果可视化、模型保存等操作。
     """
-    def __init__(self, model, criterion, optimizer, config, data_loader,
+    def __init__(self, model, criterion, optimizer, config, data_loader, logger,
                  valid_data_loader=None, lr_scheduler=None):
         self.config = config
         self.data_loader = data_loader
@@ -17,6 +18,7 @@ class Solver:
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
         self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.logger = logger
 
         self.model = model
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -27,14 +29,15 @@ class Solver:
 
     def train_epoch(self, epoch):
         """
-        Training logic for an epoch
+        完成一个epoch的训练
 
-        :param epoch: Integer, current training epoch.
-        :return: A log that contains average loss and metric in this epoch.
+        Args:
+            epoch: 当前epoch的索引
         """
         self.model.train()
 
-        for _, data, target in self.data_loader:
+        tbar = tqdm.tqdm(self.data_loader)
+        for _, data, target in tbar:
             data, target = data.to(self.device), target.to(self.device)
 
             output = self.model(data)
@@ -42,7 +45,9 @@ class Solver:
             loss.backward()
             self.optimizer.step()
             self.optimizer.zero_grad()
-            print(loss.item())
+
+            self.logger.log_in_terminal(tbar, loss.item(), self.optimizer)
+            self.logger.save_weight(self.model, epoch)
 
         if self.do_validation:
             self._valid_epoch(epoch)
@@ -50,20 +55,20 @@ class Solver:
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
-    def valid_epoch(self, epoch):
+    def _valid_epoch(self, epoch):
         """
-        Validate after training an epoch
+        完成一个epoch的训练以后使用验证集进行验证
 
-        :param epoch: Integer, current training epoch.
-        :return: A log that contains information about validation
+        Args:
+            epoch: 当前epoch的index
         """
         self.model.eval()
+        tbar = tqdm.tqdm(self.valid_data_loader)
         with torch.no_grad():
-            for batch_idx, (data, target) in enumerate(self.valid_data_loader):
+            for _, data, target in tbar:
                 data, target = data.to(self.device), target.to(self.device)
 
                 output = self.model(data)
-                loss = self.criterion(output, target)
+                loss = self.criterion(output, target)  # TODO: 当前损失无法被用于验证
 
         # add histogram of models parameters to the tensorboard
-

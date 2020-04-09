@@ -2,6 +2,7 @@ import argparse
 from prepare.prepare import Prepare
 from solver import Solver
 from utils.parse_config import parse_config
+from logger.logger import Logger
 
 
 class Train(object):
@@ -19,12 +20,14 @@ class Train(object):
             config["multi_step"]
             )
         self.train_dataloader, self.val_dataloader = train_prepare.create_dataloader(config)
+        self.logger = Logger(config["log_path"], save_weight_interval=config["save_weight_interval"])
         self.solver = Solver(
             self.model, 
             self.criterion, 
             self.optimizer, 
             config, 
             self.train_dataloader,
+            self.logger,
             valid_data_loader=self.val_dataloader, 
             lr_scheduler=self.lr_scheduler
             )

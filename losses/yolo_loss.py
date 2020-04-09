@@ -99,6 +99,8 @@ class YOLOLoss(nn.Module):
         
         Args:
             ignore_thres: 当anchor与target的iou高于该阈值时，才认为该anchor存在目标
+            object_scale: 有目标的预测框的损失权重
+
         """
         super(YOLOLoss, self).__init__()
         self.mse_loss = nn.MSELoss()
@@ -110,7 +112,7 @@ class YOLOLoss(nn.Module):
     
     def forward(self, predicts, targets):
         loss = 0
-        # 对yololayer的输出依次计算损失
+        # 对Yolo Layer的输出依次计算损失
         for predict in predicts:
             predict_bboxes = predict[0]
             classes_probablity = predict[1]
@@ -129,7 +131,7 @@ class YOLOLoss(nn.Module):
                 ignore_thres=self.ignore_thres,
             )
 
-            # Loss: 在计算定位损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
+            # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
             loss_x = self.mse_loss(center_x[object_mask], target_x[object_mask])
             loss_y = self.mse_loss(center_y[object_mask], target_y[object_mask])
             loss_w = self.mse_loss(width[object_mask], target_w[object_mask])
@@ -144,11 +146,11 @@ class YOLOLoss(nn.Module):
             class_accuracy = 100 * class_mask[object_mask].mean()
             confidence_obj = confidence[object_mask].mean()
             confidence_noobject = confidence[noobject_mask].mean()
-            confidenct_50 = (confidence > 0.5).float()
+            confidence_50 = (confidence > 0.5).float()
             iou_50 = (iou_scores > 0.5).float()
             iou_75 = (iou_scores > 0.75).float()
-            detected_mask = confidenct_50 * class_mask * target_confidence
-            precision = torch.sum(iou_50 * detected_mask) / (confidenct_50.sum() + 1e-16)
+            detected_mask = confidence_50 * class_mask * target_confidence
+            precision = torch.sum(iou_50 * detected_mask) / (confidence_50.sum() + 1e-16)
             recall50 = torch.sum(iou_50 * detected_mask) / (object_mask.sum() + 1e-16)
             recall75 = torch.sum(iou_75 * detected_mask) / (object_mask.sum() + 1e-16)
 

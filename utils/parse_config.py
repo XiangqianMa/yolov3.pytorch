@@ -11,6 +11,3 @@ def parse_config(config_file):
 if __name__ == '__main__':
     config_file = "config.json"
     parse_config(config_file)
-
-    print("wonn")
-
