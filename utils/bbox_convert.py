@@ -1,3 +1,4 @@
+import torch
 
 
 def upleft_to_center(x_axis, y_axis, width, height, image_width, image_height):
@@ -53,3 +54,20 @@ def center_to_upleft(center_x_ratio, center_y_ratio, width_ratio, height_ratio, 
     left_y = center_y - height / 2
 
     return left_x, left_y, width, height
+
+
+def xywh2xyxy(x):
+    """
+    将中心坐标形式的框转换为对角坐标的形式
+    Args:
+        x: 中心坐标形式，tensor， [batch_size, boxes_number, 4]
+
+    Returns:
+        y: 对角坐标形式，tensor, [batch_size, boxes_number, 4]
+    """
+    y = x.new_zeros(x.shape)
+    y[..., 0] = x[..., 0] - x[..., 2] / 2.0
+    y[..., 1] = x[..., 1] - x[..., 3] / 2.0
+    y[..., 2] = x[..., 0] + x[..., 2] / 2.0
+    y[..., 3] = x[..., 1] + x[..., 3] / 2.0
+    return y
