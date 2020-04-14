@@ -1,4 +1,5 @@
 import torch.optim as optim
+import torch
 from torch.optim import lr_scheduler
 from models.get_model import GetModel
 from losses.get_loss import GetLoss
@@ -41,7 +42,6 @@ class Prepare(object):
 
     def create_criterion(self, loss_type, loss_weights):
         criterion = GetLoss(loss_type=loss_type, loss_weights=loss_weights)
-
         return criterion
 
     def create_optimizer(self, model, config):

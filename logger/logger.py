@@ -11,13 +11,23 @@ class Logger:
         self.save_weight_interval = save_weight_interval
 
     def save_weight(self, model, epoch):
-        if epoch + 1 % self.save_weight_interval == 0:
-            save_path = os.path.join(self.weights_path, "yolov3_" + epoch + ".pth")
+        if (epoch + 1) % self.save_weight_interval == 0:
+            save_path = os.path.join(self.weights_path, "yolov3_" + str(epoch) + ".pth")
             print("@ Saving weight to %s " % save_path)
-            torch.save(model.module.state_dict())
+            torch.save(model.module.state_dict(), save_path)
 
-    def log_in_tensorboard(self, key, value, epoch):
-        self.tensorboard_writer.add_scalar(key, value, epoch)
+    def log_list_in_tensorboard(self, lists, epoch):
+        for item in lists:
+            self.log_in_tensorboard(item[0], item[1], epoch)
+
+    def log_list_in_terminal(self, tag, lists, epoch):
+        info = "Epoch: %d - " % epoch + tag
+        for item in lists:
+            info += item[0] + " %.4f; " % item[1]
+        print(info)
+
+    def log_in_tensorboard(self, key, value, step):
+        self.tensorboard_writer.add_scalar(key, value, step)
 
     def log_in_terminal(self, tbar, loss, optimizer=None):
         descript = ""
@@ -31,6 +41,9 @@ class Logger:
 
         tbar.set_description(desc=descript)
 
+    def print_in_terminal(self, loss, epoch):
+        print("Epoch: %d: %.4f" % (epoch, loss))
+
     def init_log(self):
         """保存配置信息和初始化tensorboard
         """
@@ -41,5 +54,6 @@ class Logger:
         print("@ Tensorboard files will be saved to: %s" % tensorboard_dir)
         tensorboard_writer = SummaryWriter(log_dir=tensorboard_dir)
         weights_dir = os.path.join(log_dir, "weights")
+        os.mkdir(weights_dir)
         print("@ Weights will be saved to: %s" % weights_dir)
         return tensorboard_writer, weights_dir

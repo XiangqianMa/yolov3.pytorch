@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import tqdm
 from torchvision.utils import make_grid
-from utils import inf_loop, MetricTracker
+from utils.evaluate import evaluate
 
 
 class Solver:
@@ -37,19 +37,23 @@ class Solver:
         self.model.train()
 
         tbar = tqdm.tqdm(self.data_loader)
-        for _, data, target in tbar:
-            data, target = data.to(self.device), target.to(self.device)
+        epoch_loss = 0
+        for iter_index, (_, data, target) in enumerate(tbar):
+            data, target = data.cuda(), target.cuda()
 
             output = self.model(data)
             loss = self.criterion(output, target)
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
+            self._update_parameter(loss, iter_index)
 
+            epoch_loss += loss.item()
             self.logger.log_in_terminal(tbar, loss.item(), self.optimizer)
-            self.logger.save_weight(self.model, epoch)
+            self.logger.log_in_tensorboard("iter-loss", loss.item(), epoch * len(tbar) + iter_index)
 
-        if self.do_validation:
+        self.logger.print_in_terminal(epoch_loss / len(tbar), epoch)
+        self.logger.log_in_tensorboard("epoch-loss", epoch_loss / len(tbar), epoch)
+        self.logger.save_weight(self.model, epoch)
+
+        if self.do_validation and (epoch + 1) % self.config["val_interval"] == 0:
             self._valid_epoch(epoch)
 
         if self.lr_scheduler is not None:
@@ -62,13 +66,31 @@ class Solver:
         Args:
             epoch: 当前epoch的index
         """
-        self.model.eval()
-        tbar = tqdm.tqdm(self.valid_data_loader)
-        with torch.no_grad():
-            for _, data, target in tbar:
-                data, target = data.to(self.device), target.to(self.device)
+        precision, recall, AP, f1, ap_class = evaluate(
+            self.model,
+            self.valid_data_loader,
+            self.config["iou_thres"],
+            self.config["conf_thres"],
+            self.config["nms_thres"],
+            self.config["image_size"][0]
+        )
 
-                output = self.model(data)
-                loss = self.criterion(output, target)  # TODO: 当前损失无法被用于验证
+        evaluation_metrics = [
+            ("val_precision", precision.mean()),
+            ("val_recall", recall.mean()),
+            ("val_mAP", AP.mean()),
+            ("val_f1", f1.mean()),
+        ]
 
-        # add histogram of models parameters to the tensorboard
+        self.logger.log_list_in_terminal("Val: ", evaluation_metrics, epoch)
+        self.logger.log_list_in_tensorboard(evaluation_metrics, epoch)
+
+    def _update_parameter(self, loss, iterations):
+        loss.backward()
+        if self.config["gradient_accumulation"] is not None:
+            if iterations % self.config["gradient_accumulation"] == 0:
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+        else:
+            self.optimizer.step()
+            self.optimizer.zero_grad()
