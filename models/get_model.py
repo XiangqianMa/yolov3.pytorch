@@ -17,7 +17,7 @@ class GetModel(object):
         if pretrained_weight is not None:
             print('@ Loading from %s' % pretrained_weight)
             load_darknet_weights(model, pretrained_weight)
-        model = torch.nn.DataParallel(model).cuda()
+
         return model
     
     def __logger__(self):

@@ -2,6 +2,7 @@
 # 数据增强文件
 #
 import numpy as np
+import json
 from PIL import Image
 from albumentations import (
     BboxParams,
@@ -12,10 +13,13 @@ from albumentations import (
 )
 
 from utils.bbox_convert import center_to_upleft, upleft_to_center
+from tools.visualize import visualize
 
 
 class DataAugment(object):
-    def __init__(self, aug={'Resize': {'height': 416, 'width': 416, 'always_apply': True}}, dataset_format='coco', min_area=0., min_visibility=0.):
+    def __init__(self,
+                 aug={'Resize': {'height': 416, 'width': 416, 'always_apply': True}},
+                 dataset_format='coco', min_area=0., min_visibility=0.):
 
         self.aug = aug
         self.dataset_format = dataset_format
@@ -44,7 +48,7 @@ class DataAugment(object):
         for bbox, current_id in zip(bboxes, category_id):
             center_x, center_y, width, height = bbox[0], bbox[1], bbox[2], bbox[3]
             left_x, left_y, width, height = center_to_upleft(center_x, center_y, width, height, image_width, image_height)
-            # 多滤掉宽或高为0的目标框
+            # 过滤掉宽或高为0的目标框
             if width > 0 and height > 0:
                 bboxes_converted.append([left_x, left_y, width, height])
                 category_id_converted.append(current_id)

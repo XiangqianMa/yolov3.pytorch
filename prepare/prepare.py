@@ -22,7 +22,7 @@ class Prepare(object):
         """
         print('Creating model: {}'.format(model_type))
         model = GetModel(model_type).get_model(model_cfg=model_cfg, image_size=image_size, pretrained_weight=pretrained_weight)
-
+        model = torch.nn.DataParallel(model).cuda()
         return model
 
     def create_dataloader(self, config):

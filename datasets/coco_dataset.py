@@ -37,7 +37,7 @@ class COCODataset(Dataset):
         Return:
             image_path: 图片路径
             image: 样本图片
-            categories_id_bboxes: numpy.array, [[category_id, sample_id, x, y, w, h], ...], 
+            categories_id_bboxes: numpy.array, [[sample_id, category_id, x, y, w, h], ...],
                                   sample_id为当前样本在batch中的编号
         """
         image_path = self.images_list[index]

@@ -14,7 +14,7 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5):
         nms_thres: 目标框重合的阈值
 
     Returns:
-        output: 经过NMS处理后剩余的目标框，大小为[batch_size, boxes_number, 4 + 1 + 2]，
+        output: list, 经过NMS处理后剩余的目标框，list中的每一个tensor表示一张图片的目标框，[[boxes_number, 4 + 1 + 2], ...]，
                 元素代表的含义依次为：目标框的（x1,y1, x2, y2）坐标、存在目标的置信度、类别分数、类别编号
     """
     prediction[..., :4] = xywh2xyxy(prediction[..., :4])  # 将边界框从中心坐标的形式转换为对角坐标
@@ -36,20 +36,20 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5):
         keep_boxes = []
         while detections.size(0):
             # 计算分数最高的bbox与其余bboxs的iou，并使用nms_thres进行过滤
-            lager_overlap = bbox_iou(detections[0, :4].unsqueeze(dim=0), detections[:, :4]) > nms_thres
-            same_class = detections[:, -1] == detections[0, -1]
+            lager_overlap = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4]) > nms_thres
+            same_class = detections[0, -1] == detections[:, -1]
             # 过滤掉属于同一类别的，且与最高分数的目标框的IoU大于nms_thres的目标框
             invalid_index = lager_overlap & same_class
             # 将这些框按照存在目标的置信度为权重加权到得分最高的框中
             weights = detections[invalid_index, 4:5]
-            detections[0, :4] = (weights * detections[invalid_index, :4]).sum(dim=0) / weights.sum()
+            detections[0, :4] = (weights * detections[invalid_index, :4]).sum(0) / weights.sum()
             keep_boxes += [detections[0]]
             detections = detections[~invalid_index]  # 过滤掉当前最高分数的框 以及 无效的框
 
         if keep_boxes:
             output[image_index] = torch.stack(keep_boxes)
 
-        return output
+    return output
 
 
 if __name__ == '__main__':
