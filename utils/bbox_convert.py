@@ -71,3 +71,24 @@ def xywh2xyxy(x):
     y[..., 2] = x[..., 0] + x[..., 2] / 2.0
     y[..., 3] = x[..., 1] + x[..., 3] / 2.0
     return y
+
+
+def rescale_boxes(boxes, current_dim, original_shape):
+    """
+    将目标框rescale回原始图片对应的尺寸
+    Args:
+        boxes: 目标框
+        current_dim: 当前尺寸
+        original_shape: 原始尺寸
+
+    Returns:
+        boxes: 原始图片尺寸对应的目标框
+    """
+    dw = original_shape[0] / current_dim[0]
+    dh = original_shape[1] / current_dim[1]
+
+    boxes[:, 0] = boxes[:, 0] * dw
+    boxes[:, 1] = boxes[:, 1] * dh
+    boxes[:, 2] = boxes[:, 2] * dw
+    boxes[:, 3] = boxes[:, 3] * dh
+    return boxes
