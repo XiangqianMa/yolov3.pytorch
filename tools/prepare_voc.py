@@ -5,7 +5,7 @@ import tqdm
 from os import getcwd
 
 
-sets = ['train', 'val']
+sets = ['test']
 # classes
 classes = [
     "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", 
@@ -13,15 +13,15 @@ classes = [
     "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
     ]
 # the path of JPEGImages
-image_path = "data/VOC2012/JPEGImages"
+image_path = "data/VOCdevkit/JPEGImages"
 # the path where you want to put your label files in
-target_label_path_root = "data/voc/voc_2012"
+target_label_path_root = "data/voc"
 # the path of original annotation
-annotation_path = "data/VOC2012/Annotations"
+annotation_path = "data/VOCdevkit/Annotations"
 # the path where you want to put your image path files in
-target_image_path_root = "data/voc/voc_2012"
+target_image_path_root = "data/voc"
 # the path of train.txt and val.txt
-dataset_separate_path = "data/VOC2012/ImageSets/Main"
+dataset_separate_path = "data/VOCdevkit/ImageSets/Main"
 
 
 def convert(size, box):

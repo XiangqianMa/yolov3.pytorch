@@ -1,4 +1,6 @@
 from datasets.coco_dataset import COCODataset
+from datasets.official_dataset import ListDataset
+from datasets.oxfordhand import OxfordDataset
 from datasets.data_augment import DataAugment
 from torch.utils.data import DataLoader
 
@@ -14,8 +16,11 @@ class GetDataLoader(object):
         std=(0.229, 0.224, 0.225),
         dataset_format='coco',
         train_augmentation={'Resize': {'height': 416, 'width':416, 'always_apply': True}},
-        val_augmentation={'Resize': {'height': 416, 'width':416, 'always_apply': True}}
+        val_augmentation={'Resize': {'height': 416, 'width':416, 'always_apply': True}},
+        dataset="coco"
     ):
+        self.dataset = dataset
+
         self.train_images_root = train_images_root
         self.train_annotations_root = train_annotations_root
         self.train_augmentation = train_augmentation
@@ -44,7 +49,14 @@ class GetDataLoader(object):
         return DataAugment(aug=augmentation, dataset_format=self.dataset_format)
     
     def __get_datasets__(self, images_root, annotations_root, transform):
-        return COCODataset(images_root, annotations_root, self.mean, self.std, transforms=transform)
+        dataset = None
+        if self.dataset == 'official':
+            dataset = ListDataset(images_root, annotations_root, 416, True, True)
+        elif self.dataset == 'coco':
+            dataset = COCODataset(images_root, annotations_root, self.mean, self.std, transforms=transform)
+        elif self.dataset == 'oxfordhand':
+            dataset = OxfordDataset(images_root, annotations_root, 416, True, False)
+        return dataset
 
 
 if __name__ == '__main__':

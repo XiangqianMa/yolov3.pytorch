@@ -20,9 +20,11 @@ def visualize_bbox(img, bbox, class_id, class_idx_to_name, color=BOX_COLOR, thic
     return img
 
 
-def visualize(annotations, category_id_to_name):
+def visualize(annotations, category_id_to_name, show=True):
     img = annotations['image'].copy()
     for idx, bbox in enumerate(annotations['bboxes']):
         img = visualize_bbox(img, bbox, annotations['category_id'][idx], category_id_to_name)
-    plt.figure(figsize=(12, 12))
-    plt.imshow(img)
+    if show:
+        plt.figure(figsize=(12, 12))
+        plt.imshow(img)
+    return img

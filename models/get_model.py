@@ -1,6 +1,5 @@
 import torch
 from models.darknet import Darknet
-from models.darknet import load_darknet_weights
 
 
 class GetModel(object):
@@ -16,7 +15,7 @@ class GetModel(object):
         
         if pretrained_weight is not None:
             print('@ Loading from %s' % pretrained_weight)
-            load_darknet_weights(model, pretrained_weight)
+            model.load_darknet_weights(pretrained_weight)
 
         return model
     

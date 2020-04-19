@@ -4,6 +4,26 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+class Upsample(nn.Module):
+    """ nn.Upsample is deprecated """
+
+    def __init__(self, scale_factor, mode="nearest"):
+        super(Upsample, self).__init__()
+        self.scale_factor = scale_factor
+        self.mode = mode
+
+    def forward(self, x):
+        x = F.interpolate(x, scale_factor=self.scale_factor, mode=self.mode)
+        return x
+
+
+class EmptyLayer(nn.Module):
+    """Placeholder for 'route' and 'shortcut' layers"""
+
+    def __init__(self):
+        super(EmptyLayer, self).__init__()
+
+
 class YOLOLayer(nn.Module):
     """YOLO的detection head, 使用网络预测的值和预设的anchor组合得到预测的bbox
     """
@@ -97,7 +117,7 @@ class YOLOLayer(nn.Module):
             output = predict
         return output
 
-    def create_grid(self, image_size=(416, 416), number_grid=(13, 13), device='cpu', dtype=torch.float32):
+    def create_grid(self, image_size=416, number_grid=(13, 13), device='cpu', dtype=torch.float32):
         """ 为当前YOLOLayer层创建grid，功能包括：计算每一个grid cell相对于左上角的偏移量，将anchor转换为相对于stride的倍数
 
         :param image_size: 网络原始输入图像的大小
@@ -107,7 +127,7 @@ class YOLOLayer(nn.Module):
         :return:
         """
         number_x_grid, number_y_grid = number_grid
-        self.image_size = max(image_size)
+        self.image_size = image_size
         self.stride = self.image_size / max(number_grid)
 
         # 创建各个grid在x, y坐标轴上的偏移量, 注意x, y轴的方向, x对应特征图的第1维，y对应特征图的第0维

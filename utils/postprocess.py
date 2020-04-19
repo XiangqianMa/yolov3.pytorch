@@ -15,7 +15,7 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5):
 
     Returns:
         output: list, 经过NMS处理后剩余的目标框，list中的每一个tensor表示一张图片的目标框，[[boxes_number, 4 + 1 + 2], ...]，
-                元素代表的含义依次为：目标框的（x1,y1, x2, y2）坐标、存在目标的置信度、类别分数、类别编号
+                元素代表的含义依次为：目标框的（x1, y1, x2, y2）坐标、存在目标的置信度、类别分数、类别编号
     """
     prediction[..., :4] = xywh2xyxy(prediction[..., :4])  # 将边界框从中心坐标的形式转换为对角坐标
     output = [None for _ in range(len(prediction))]

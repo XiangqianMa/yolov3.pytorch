@@ -67,11 +67,16 @@ class COCODataset(Dataset):
             batch: 
         """
         paths, images, targets = list(zip(*batch))
-        targets = [categories_id_bboxes for categories_id_bboxes in targets if categories_id_bboxes is not None]
+        # 过滤不存在boxes的样本
         for sample_index, categories_id_bboxes in enumerate(targets):
+            if categories_id_bboxes is None:
+                continue
             categories_id_bboxes[:, 0] = sample_index
-        # 将一个batch中的所有样本的bboxs都在第0维进行拼接, 每个bbox所属的样本由其下标为0的位置的数表示
-        targets = torch.cat(targets, dim=0)
+        targets = [categories_id_bboxes for categories_id_bboxes in targets if categories_id_bboxes is not None]
+        try:
+            targets = torch.cat(targets, dim=0)
+        except:
+            targets = None
         images = torch.stack(images)
         return paths, images, targets
 

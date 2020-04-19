@@ -39,6 +39,8 @@ class Solver:
         tbar = tqdm.tqdm(self.data_loader)
         epoch_loss = 0
         for iter_index, (_, data, target) in enumerate(tbar):
+            if target is None:
+                continue
             data, target = data.cuda(), target.cuda()
 
             output = self.model(data)
@@ -72,7 +74,7 @@ class Solver:
             self.config["iou_thres"],
             self.config["conf_thres"],
             self.config["nms_thres"],
-            self.config["image_size"][0]
+            self.config["image_size"]
         )
 
         evaluation_metrics = [

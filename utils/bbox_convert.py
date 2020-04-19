@@ -1,4 +1,6 @@
 import torch
+import numpy as np
+import torch.nn.functional as F
 
 
 def upleft_to_center(x_axis, y_axis, width, height, image_width, image_height):
@@ -56,6 +58,23 @@ def center_to_upleft(center_x_ratio, center_y_ratio, width_ratio, height_ratio, 
     return left_x, left_y, width, height
 
 
+def corner_to_upleft(boxes):
+    """
+    将对角坐标转换为左上角和宽高的形式
+    Args:
+        boxes: 对角坐标形式的目标框
+
+    Returns:
+        boxes_convert: 左上角和宽高形式的坐标
+    """
+    boxes_convert = np.zeros_like(boxes)
+    boxes_convert[..., 0] = boxes[..., 0]
+    boxes_convert[..., 1] = boxes[..., 1]
+    boxes_convert[..., 2] = boxes[..., 2] - boxes[..., 0]
+    boxes_convert[..., 3] = boxes[..., 3] - boxes[..., 1]
+    return boxes_convert
+
+
 def xywh2xyxy(x):
     """
     将中心坐标形式的框转换为对角坐标的形式
@@ -84,11 +103,34 @@ def rescale_boxes(boxes, current_dim, original_shape):
     Returns:
         boxes: 原始图片尺寸对应的目标框
     """
-    dw = original_shape[0] / current_dim[0]
-    dh = original_shape[1] / current_dim[1]
-
-    boxes[:, 0] = boxes[:, 0] * dw
-    boxes[:, 1] = boxes[:, 1] * dh
-    boxes[:, 2] = boxes[:, 2] * dw
-    boxes[:, 3] = boxes[:, 3] * dh
+    orig_h, orig_w = original_shape
+    # The amount of padding that was added
+    pad_x = max(orig_h - orig_w, 0) * (current_dim / max(original_shape))
+    pad_y = max(orig_w - orig_h, 0) * (current_dim / max(original_shape))
+    # Image height and width after padding is removed
+    unpad_h = current_dim - pad_y
+    unpad_w = current_dim - pad_x
+    # Rescale bounding boxes to dimension of original image
+    boxes[:, 0] = ((boxes[:, 0] - pad_x // 2) / unpad_w) * orig_w
+    boxes[:, 1] = ((boxes[:, 1] - pad_y // 2) / unpad_h) * orig_h
+    boxes[:, 2] = ((boxes[:, 2] - pad_x // 2) / unpad_w) * orig_w
+    boxes[:, 3] = ((boxes[:, 3] - pad_y // 2) / unpad_h) * orig_h
     return boxes
+
+
+def pad_to_square(img, pad_value):
+    c, h, w = img.shape
+    dim_diff = np.abs(h - w)
+    # (upper / left) padding and (lower / right) padding
+    pad1, pad2 = dim_diff // 2, dim_diff - dim_diff // 2
+    # Determine padding
+    pad = (0, 0, pad1, pad2) if h <= w else (pad1, pad2, 0, 0)
+    # Add padding
+    img = F.pad(img, pad, "constant", value=pad_value)
+
+    return img, pad
+
+
+def resize(image, size):
+    image = F.interpolate(image.unsqueeze(0), size=size, mode="nearest").squeeze(0)
+    return image

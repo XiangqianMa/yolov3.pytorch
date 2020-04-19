@@ -23,7 +23,7 @@ class Logger:
     def log_list_in_terminal(self, tag, lists, epoch):
         info = "Epoch: %d - " % epoch + tag
         for item in lists:
-            info += item[0] + " %.4f; " % item[1]
+            info += item[0] + " %.7f; " % item[1]
         print(info)
 
     def log_in_tensorboard(self, key, value, step):
@@ -31,7 +31,7 @@ class Logger:
 
     def log_in_terminal(self, tbar, loss, optimizer=None):
         descript = ""
-        descript += "Loss: %.4f " % loss
+        descript += "Loss: %.7f " % loss
 
         if optimizer is not None:
             params_groups_lr = ""
@@ -42,7 +42,7 @@ class Logger:
         tbar.set_description(desc=descript)
 
     def print_in_terminal(self, loss, epoch):
-        print("Epoch: %d: %.4f" % (epoch, loss))
+        print("Epoch: %d: %.7f" % (epoch, loss))
 
     def init_log(self):
         """保存配置信息和初始化tensorboard

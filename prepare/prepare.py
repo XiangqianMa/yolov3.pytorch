@@ -20,7 +20,7 @@ class Prepare(object):
             cfg: 网络结构配置
             pretrained_weight: 预训练权重的路径
         """
-        print('Creating model: {}'.format(model_type))
+        print('Loading model cfg: {}'.format(model_cfg))
         model = GetModel(model_type).get_model(model_cfg=model_cfg, image_size=image_size, pretrained_weight=pretrained_weight)
         model = torch.nn.DataParallel(model).cuda()
         return model
@@ -35,7 +35,8 @@ class Prepare(object):
             config["std"],
             config["dataset_format"],
             config["train_augmentation"],
-            config["val_augmentation"]
+            config["val_augmentation"],
+            config["dataset"]
             )
         train_dataloader, val_dataloader = my_get_dataloader.get_dataloader(config["batch_size"])
         return train_dataloader, val_dataloader
