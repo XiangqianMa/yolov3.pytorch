@@ -1,5 +1,6 @@
 import numpy as np
 import os
+import time
 import json
 import torch
 import torchvision.transforms as T
@@ -24,31 +25,53 @@ class Detect(object):
         self._prepare_model()
 
     def detect_single_image(self, image_path, mean, std, conf_thres=0.5, nms_thres=0.5):
+        print('~' * 10 + image_path.split('/')[-1] + '~' * 10)
         image, image_tensor = self._prepare_image(image_path, mean, std)
         with torch.no_grad():
+            start_time = time.time()
             predict = self.model(image_tensor)
+            end_time = time.time()
+            print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
+            start_time = time.time()
             predict = non_max_suppression(predict, conf_thres, nms_thres)[0]
-        # 坐标为[x1, y1, x2, y2]形式
-        predict = predict.cpu().detach().numpy()
-        predict = rescale_boxes(predict, self.image_size, image.shape[:2])
-        # [x1, y1, x2, y2] -> [x1, y1, w, h]
-        predict[..., :4] = corner_to_upleft(predict[..., :4])
-        predict_boxes = predict[..., :4].tolist()
-        predict_id = predict[..., -1].astype(int).tolist()
-        annotations = {
-            'image': image,
-            'bboxes': predict_boxes,
-            'category_id': predict_id,
-        }
-        image_with_bboxes = visualize(annotations, self.id_to_name)
-        image_with_bboxes = Image.fromarray(image_with_bboxes)
-        image_save_path = os.path.join(self.save_path, image_path.split('/')[-1])
-        print("@ Saving image to %s." % image_save_path)
-        image_with_bboxes.save(image_save_path)
+            end_time = time.time()
+            print("@ NMS took %d ms." % ((end_time - start_time) * 1000))
+
+        if predict is not None:
+            # 坐标为[x1, y1, x2, y2]形式
+            predict = predict.cpu().detach().numpy()
+            predict = rescale_boxes(predict, self.image_size, image.shape[:2])
+            # [x1, y1, x2, y2] -> [x1, y1, w, h]
+            predict[..., :4] = corner_to_upleft(predict[..., :4])
+            predict_boxes = predict[..., :4].tolist()
+            predict_conf = predict[..., 4].tolist()
+            predict_id = predict[..., -1].astype(int).tolist()
+            self._log_predicts(predict_conf, predict_id)
+            annotations = {
+                'image': image,
+                'bboxes': predict_boxes,
+                'category_id': predict_id,
+            }
+            image_with_bboxes = visualize(annotations, self.id_to_name)
+            image_with_bboxes = Image.fromarray(image_with_bboxes)
+            image_save_path = os.path.join(self.save_path, image_path.split('/')[-1])
+            print("@ Saving image to %s." % image_save_path)
+            image_with_bboxes.save(image_save_path)
+        else:
+            print("@ No object in %s." % image_path)
         pass
 
     def detect_multi_images(self, image_dir, mean, std, conf_thres=0.5, nms_thres=0.5):
+        # 序列化检测的方式，非batch
+        images_list = os.listdir(image_dir)
+        for image_name in images_list:
+            image_path = os.path.join(image_dir, image_name)
+            self.detect_single_image(image_path, mean, std, conf_thres, nms_thres)
         pass
+
+    def _log_predicts(self, predict_conf, predict_id):
+        for index, (conf, class_id) in enumerate(zip(predict_conf, predict_id)):
+            print("Object_%d: %s - %.4f." % (index, self.id_to_name[str(class_id)], conf))
 
     def _prepare_image(self, image_path, mean, std):
         image = Image.open(image_path).convert("RGB")
@@ -85,26 +108,32 @@ class Detect(object):
 
 
 if __name__ == "__main__":
-    weight_path = "checkpoints/official_weights/yolov3.weights"
-    image_path = "data/test_images/000000256868.jpg"
-    id_to_name_file = "data/coco/categories_id_to_name.json"
+    model_type = "darknet"
+    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
+    image_size = 416
+    weight_path = "checkpoints/backup/log-2020-04-19T19-42-12/weights/yolov3_59.pth"
+    image_root = "data/test_images"
+    image_path = "data/test_images/000000217060.jpg"
+    id_to_name_file = "data/oxfordhand/categories_id_to_name.json"
     save_path = "data/test_results"
     config = parse_config("config.json")
     detect = Detect(
-        config["model_type"],
-        config["model_cfg"],
-        config["image_size"],
+        model_type,
+        model_cfg,
+        image_size,
         weight_path,
         id_to_name_file,
         save_path
     )
 
-    detect.detect_single_image(
-        image_path,
-        config["mean"],
-        config["std"],
-        0.5,
-        0.5
-    )
+    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.5, 0.5)
+
+    # detect.detect_single_image(
+    #     image_path,
+    #     config["mean"],
+    #     config["std"],
+    #     0.5,
+    #     0.5
+    # )
     pass
 

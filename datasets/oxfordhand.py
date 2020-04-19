@@ -157,7 +157,7 @@ class OxfordDataset(Dataset):
         # Returns (x, y, w, h)
         boxes[:, 1] = ((x1 + x2) / 2) / padded_w
         boxes[:, 2] = ((y1 + y2) / 2) / padded_h
-        boxes[:, 3] *= w_factor / padded_w      # 原来的数值是boxw_ori/imgw_ori, 现在变成了(boxw_ori/imgw_ori)*imgw_ori/imgw_pad=boxw_ori/imgw_pad
+        boxes[:, 3] *= w_factor / padded_w  # 原来的数值是boxw_ori/imgw_ori, 现在变成了(boxw_ori/imgw_ori)*imgw_ori/imgw_pad=boxw_ori/imgw_pad
         boxes[:, 4] *= h_factor / padded_h
 
         # Apply augmentations

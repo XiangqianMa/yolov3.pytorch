@@ -50,6 +50,7 @@ class GetDataLoader(object):
     
     def __get_datasets__(self, images_root, annotations_root, transform):
         dataset = None
+        print("@ Dataset: %s." % self.dataset)
         if self.dataset == 'official':
             dataset = ListDataset(images_root, annotations_root, 416, True, True)
         elif self.dataset == 'coco':

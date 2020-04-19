@@ -1,6 +1,6 @@
 {
     "model_type": "darknet",
-    "model_cfg": "cfg/model_cfg/yolov3.cfg",
+    "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
     "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
     "image_size": 416,
 
