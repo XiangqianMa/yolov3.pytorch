@@ -15,7 +15,11 @@ class GetModel(object):
         
         if pretrained_weight is not None:
             print('@ Loading from %s' % pretrained_weight)
-            model.load_darknet_weights(pretrained_weight)
+            if pretrained_weight.endswith('.pth'):
+                state_dict = torch.load(pretrained_weight)
+                model.load_state_dict(state_dict)
+            else:
+                model.load_darknet_weights(pretrained_weight)
 
         return model
     

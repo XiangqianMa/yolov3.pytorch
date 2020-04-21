@@ -17,7 +17,8 @@ class GetDataLoader(object):
         dataset_format='coco',
         train_augmentation={'Resize': {'height': 416, 'width':416, 'always_apply': True}},
         val_augmentation={'Resize': {'height': 416, 'width':416, 'always_apply': True}},
-        dataset="coco"
+        dataset="coco",
+        normalize=False
     ):
         self.dataset = dataset
 
@@ -31,32 +32,38 @@ class GetDataLoader(object):
 
         self.mean = mean
         self.std = std
+        self.normalize = normalize
         self.dataset_format = dataset_format
 
         self.train_transform = self.__get_data_augment__(train_augmentation)
         self.val_transform = self.__get_data_augment__(val_augmentation)
     
     def get_dataloader(self, batch_size):
-        train_datset = self.__get_datasets__(self.train_images_root, self.train_annotations_root, self.train_transform)
-        val_dataset = self.__get_datasets__(self.val_images_root, self.val_annotations_root, self.val_transform)
+        train_datset = self.__get_datasets__(self.train_images_root, self.train_annotations_root, self.train_transform,
+                                             True, True)
+        val_dataset = self.__get_datasets__(self.val_images_root, self.val_annotations_root, self.val_transform,
+                                            False, False)
 
-        train_dataloader = DataLoader(train_datset, batch_size=batch_size, num_workers=8, pin_memory=True, shuffle=True, collate_fn=train_datset.collate_fn)
-        val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=8, pin_memory=True, shuffle=False, collate_fn=val_dataset.collate_fn)
+        train_dataloader = DataLoader(train_datset, batch_size=batch_size, num_workers=8, pin_memory=True,
+                                      shuffle=True, collate_fn=train_datset.collate_fn)
+        val_dataloader = DataLoader(val_dataset, batch_size=batch_size, num_workers=8, pin_memory=True,
+                                    shuffle=False, collate_fn=val_dataset.collate_fn)
 
         return train_dataloader, val_dataloader
 
     def __get_data_augment__(self, augmentation):
         return DataAugment(aug=augmentation, dataset_format=self.dataset_format)
     
-    def __get_datasets__(self, images_root, annotations_root, transform):
+    def __get_datasets__(self, images_root, annotations_root, transform, augment=True, multiscale=True):
         dataset = None
         print("@ Dataset: %s." % self.dataset)
         if self.dataset == 'official':
-            dataset = ListDataset(images_root, annotations_root, 416, True, True)
+            dataset = ListDataset(images_root, annotations_root, 416, augment, multiscale)
         elif self.dataset == 'coco':
-            dataset = COCODataset(images_root, annotations_root, self.mean, self.std, transforms=transform)
+            dataset = COCODataset(images_root, annotations_root, self.mean, self.std, augment=transform,
+                                  normalize=self.normalize)
         elif self.dataset == 'oxfordhand':
-            dataset = OxfordDataset(images_root, annotations_root, 416, True, False)
+            dataset = OxfordDataset(images_root, annotations_root, 416, augment, multiscale)
         return dataset
 
 

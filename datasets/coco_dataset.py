@@ -9,20 +9,20 @@ import numpy as np
 import torchvision.transforms as T
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
-import matplotlib.pylab as plt
 
-from datasets.data_augment import DataAugment
+from datasets.data_augment import DataAugment, pad_to_square
 
 
 class COCODataset(Dataset):
-    def __init__(self, images_root, annotations_root, mean, std, transforms=None):
+    def __init__(self, images_root, annotations_root, mean, std, augment=None, normalize=False):
         """
         Args:
             images_root: 存放原始图片的根目录
             annotations_root: 存放标注文件的根目录
             mean: 通道均值
             std: 通道方差
-            transforms: 图片与bbox的转换方式
+            augment: 图片与bbox的转换方式
+            normalize: 是否对图片进行归一化操作(均值为mean，方差为std)
         """
         self.images_root = images_root
         self.annotations_root = annotations_root
@@ -30,7 +30,8 @@ class COCODataset(Dataset):
         
         self.mean = mean
         self.std = std
-        self.transforms = transforms
+        self.normalize = normalize
+        self.augment = augment
 
     def __getitem__(self, index):
         """
@@ -42,17 +43,20 @@ class COCODataset(Dataset):
         """
         image_path = self.images_list[index]
         annotation_path = os.path.join(self.annotations_root, image_path.split('/')[-1].replace('jpg', 'txt'))
+        # 读取与padding
         image = Image.open(image_path).convert("RGB")
         categories_id, bboxes = self.__parse_annotation_txt__(annotation_path)
-        image, bboxes, categories_id = self.transforms(image, bboxes, categories_id)
+        image, bboxes = pad_to_square(image, bboxes, fill=0)
+        # data augmentation
+        image, bboxes, categories_id = self.augment(image, bboxes, categories_id)
 
-        transform_compose = T.Compose(
-            [
-                T.ToTensor(),
-                T.Normalize(self.mean, self.std),
-            ]
-        )
+        # 归一化操作
+        compose = [T.ToTensor()]
+        if self.normalize:
+            compose.append(T.Normalize(self.mean, self.std))
+        transform_compose = T.Compose(compose)
         image = transform_compose(image)
+
         # categories_id_bboxes[:, 0]用于存放当前样本在batch中的编号
         categories_id_bboxes = torch.zeros((len(bboxes), 6))
         categories_id_bboxes[:, 2:] = torch.Tensor(bboxes)
@@ -109,13 +113,13 @@ class COCODataset(Dataset):
 
 
 if __name__ == '__main__':
-    images_root = 'data/coco/val2017'
-    annotations_root = 'data/coco/val2017_txt'
+    images_root = 'data/voc/train'
+    annotations_root = 'data/voc/train_txt'
     image_size = 416
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     data_augment = DataAugment()
-    dataset = COCODataset(images_root, annotations_root, mean, std, data_augment)
+    dataset = COCODataset(images_root, annotations_root, mean, std, data_augment, False)
     for i in range(len(dataset)):
         _, image, targets = dataset[i]
     pass

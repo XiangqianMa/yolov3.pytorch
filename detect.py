@@ -9,7 +9,7 @@ from models.get_model import GetModel
 from utils.postprocess import non_max_suppression
 from utils.parse_config import parse_config
 from utils.bbox_convert import rescale_boxes, corner_to_upleft
-from tools.visualize import visualize
+from utils.visualize import visualize
 from utils.bbox_convert import pad_to_square, resize
 
 
@@ -59,6 +59,7 @@ class Detect(object):
             image_with_bboxes.save(image_save_path)
         else:
             print("@ No object in %s." % image_path)
+        print("\n")
         pass
 
     def detect_multi_images(self, image_dir, mean, std, conf_thres=0.5, nms_thres=0.5):
@@ -71,7 +72,7 @@ class Detect(object):
 
     def _log_predicts(self, predict_conf, predict_id):
         for index, (conf, class_id) in enumerate(zip(predict_conf, predict_id)):
-            print("Object_%d: %s - %.4f." % (index, self.id_to_name[str(class_id)], conf))
+            print("  >> Object_%d: %s - %.4f." % (index, self.id_to_name[str(class_id)], conf))
 
     def _prepare_image(self, image_path, mean, std):
         image = Image.open(image_path).convert("RGB")
@@ -109,12 +110,12 @@ class Detect(object):
 
 if __name__ == "__main__":
     model_type = "darknet"
-    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
+    model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
     image_size = 416
-    weight_path = "checkpoints/backup/log-2020-04-19T19-42-12/weights/yolov3_59.pth"
+    weight_path = "checkpoints/backup/log-2020-04-20T22-04-23/weights/yolov3_49.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
-    id_to_name_file = "data/oxfordhand/categories_id_to_name.json"
+    id_to_name_file = "data/voc/categories_id_to_name.json"
     save_path = "data/test_results"
     config = parse_config("config.json")
     detect = Detect(

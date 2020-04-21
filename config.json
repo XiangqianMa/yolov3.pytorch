@@ -1,11 +1,11 @@
 {
     "model_type": "darknet",
-    "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
-    "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
+    "model_cfg": "cfg/model_cfg/yolov3-voc.cfg",
+    "pretrained_weight": "checkpoints/backup/log-2020-04-20T22-04-23/weights/yolov3_49.pth",
     "image_size": 416,
 
     "optimizer": "SGD",
-    "lr": 1e-3,
+    "lr": 1e-4,
     "weight_decay": 0,
     "gradient_accumulation": 2,
 
@@ -25,15 +25,16 @@
     "restart_step": null,
     "multi_step": null,
 
-    "dataset": "oxfordhand",
-    "train_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/train",
-    "train_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/train",
-    "val_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/validation",
-    "val_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/validation",
+    "dataset": "official",
+    "train_images_root": "data/voc/train",
+    "train_annotations_root": "data/voc/train_txt",
+    "val_images_root": "data/voc/test",
+    "val_annotations_root": "data/voc/test_txt",
     "official": false,
 
     "mean": [0.485, 0.456, 0.406],
     "std": [0.229, 0.224, 0.225],
+    "normalize": false,
     "dataset_format": "coco",
     "train_augmentation": 
     {
@@ -55,7 +56,8 @@
     },
 
     "batch_size": 8,
-    "epoch": 160,
+    "start_epoch": 50,
+    "epoch": 120,
     "log_iteration": 10,
     "save_weight_interval": 10,
     "val_interval": 1,

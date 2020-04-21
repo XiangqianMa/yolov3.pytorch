@@ -2,8 +2,8 @@
 # 数据增强文件
 #
 import numpy as np
-import json
 from PIL import Image
+from torchvision.transforms import Pad
 from albumentations import (
     BboxParams,
     HorizontalFlip,
@@ -13,7 +13,6 @@ from albumentations import (
 )
 
 from utils.bbox_convert import center_to_upleft, upleft_to_center
-from tools.visualize import visualize
 
 
 class DataAugment(object):
@@ -92,3 +91,44 @@ class DataAugment(object):
         return Compose(augment, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
                                                         min_visibility=self.min_visibility,
                                                         label_fields=['category_id']))
+
+
+def pad_to_square(image, boxes, fill=0):
+    """
+    对输入图片进行pad操作，将较短的边补为和长边一样的大小
+    Args:
+        image: PIL.Image
+        boxes: list，目标的标注框
+        fill: pad的值，默认为0
+
+    Returns:
+        image: PIL.Image
+        boxes: List
+    """
+    w, h = image.size
+    size_diff = np.abs(w - h)
+    pad1 = size_diff // 2
+    pad2 = size_diff - pad1
+    # (left, top, right, bottom)
+    pad_diff = (0, pad1, 0, pad2) if h <= w else (pad1, 0, pad2, 0)
+    pad = Pad(pad_diff, fill=fill)
+    image = pad(image)
+    padded_w, padded_h = image.size
+    boxes_numpy = np.asarray(boxes)
+    # [center_x, center_y, w, h] -> [x1, y1, x2, y2]
+    x1 = (boxes_numpy[:, 0] - boxes_numpy[:, 2] / 2) * w
+    y1 = (boxes_numpy[:, 1] - boxes_numpy[:, 3] / 2) * h
+    x2 = (boxes_numpy[:, 0] + boxes_numpy[:, 2] / 2) * w
+    y2 = (boxes_numpy[:, 1] + boxes_numpy[:, 3] / 2) * h
+    # padding操作
+    x1 += pad_diff[0]
+    y1 += pad_diff[1]
+    x2 += pad_diff[0]
+    y2 += pad_diff[1]
+    # [x1, y1, x2, y2] -> [center_x, center_y, w, h]
+    boxes_numpy[:, 0] = ((x1 + x2) / 2) / padded_w
+    boxes_numpy[:, 1] = ((y1 + y2) / 2) / padded_h
+    boxes_numpy[:, 2] = (x2 - x1) / padded_w
+    boxes_numpy[:, 3] = (y2 - y1) / padded_h
+    boxes = boxes_numpy.tolist()
+    return image, boxes

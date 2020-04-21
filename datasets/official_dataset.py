@@ -10,6 +10,7 @@ from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
 
+# TODO 分析自己实现的数据集和官方的数据的差异
 def horisontal_flip(images, targets):
     images = torch.flip(images, [-1])
     targets[:, 2] = 1 - targets[:, 2]

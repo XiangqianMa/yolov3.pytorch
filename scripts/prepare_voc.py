@@ -2,6 +2,7 @@ import xml.etree.ElementTree as ET
 import os
 import shutil
 import tqdm
+import json
 from os import getcwd
 
 
@@ -22,6 +23,7 @@ annotation_path = "data/VOCdevkit/Annotations"
 target_image_path_root = "data/voc"
 # the path of train.txt and val.txt
 dataset_separate_path = "data/VOCdevkit/ImageSets/Main"
+json_path = "data/voc/categories_id_to_name.json"
 
 
 def convert(size, box):
@@ -84,3 +86,9 @@ for image_set in sets:
         shutil.copy(image_path_0, image_path_1)
         convert_annotation(image_id, target_label_path)
         tbar.set_description(desc=descript)
+
+id_to_name = {}
+for index, class_name in enumerate(classes):
+    id_to_name[str(index)] = class_name
+with open(json_path, 'w') as f:
+    json.dump(id_to_name, f)

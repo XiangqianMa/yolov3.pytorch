@@ -32,10 +32,11 @@ class Train(object):
             lr_scheduler=self.lr_scheduler
             )
 
+        self.start_epoch = config["start_epoch"]
         self.epoch = config["epoch"]
 
     def run(self):
-        for epoch_index in range(self.epoch):
+        for epoch_index in range(self.start_epoch, self.epoch):
             self.solver.train_epoch(epoch_index)
 
 

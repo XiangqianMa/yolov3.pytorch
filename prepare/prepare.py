@@ -36,7 +36,8 @@ class Prepare(object):
             config["dataset_format"],
             config["train_augmentation"],
             config["val_augmentation"],
-            config["dataset"]
+            config["dataset"],
+            config["normalize"]
             )
         train_dataloader, val_dataloader = my_get_dataloader.get_dataloader(config["batch_size"])
         return train_dataloader, val_dataloader
