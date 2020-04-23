@@ -48,7 +48,7 @@ class Solver:
             self._update_parameter(loss, iter_index)
 
             epoch_loss += loss.item()
-            self.logger.log_in_terminal(tbar, loss.item(), self.optimizer)
+            self.logger.log_in_terminal(tbar, loss.item(), epoch, self.optimizer)
             self.logger.log_in_tensorboard("iter-loss", loss.item(), epoch * len(tbar) + iter_index)
 
         self.logger.print_in_terminal(epoch_loss / len(tbar), epoch)
@@ -56,12 +56,12 @@ class Solver:
         self.logger.save_weight(self.model, epoch)
 
         if self.do_validation and (epoch + 1) % self.config["val_interval"] == 0:
-            self._valid_epoch(epoch)
+            self.__valid_epoch__(epoch)
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
-    def _valid_epoch(self, epoch):
+    def __valid_epoch__(self, epoch):
         """
         完成一个epoch的训练以后使用验证集进行验证
 

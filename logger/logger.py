@@ -29,8 +29,8 @@ class Logger:
     def log_in_tensorboard(self, key, value, step):
         self.tensorboard_writer.add_scalar(key, value, step)
 
-    def log_in_terminal(self, tbar, loss, optimizer=None):
-        descript = ""
+    def log_in_terminal(self, tbar, loss, epoch, optimizer=None):
+        descript = "Epoch %d " % epoch
         descript += "Loss: %.7f " % loss
 
         if optimizer is not None:

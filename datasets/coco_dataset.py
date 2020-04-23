@@ -6,7 +6,9 @@ import torch
 import os
 import json
 import numpy as np
+import random
 import torchvision.transforms as T
+import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
@@ -14,7 +16,8 @@ from datasets.data_augment import DataAugment, pad_to_square
 
 
 class COCODataset(Dataset):
-    def __init__(self, images_root, annotations_root, mean, std, augment=None, normalize=False):
+    def __init__(self, images_root, annotations_root, image_size, mean, std, augment=None, normalize=False,
+                 multi_scale=False):
         """
         Args:
             images_root: 存放原始图片的根目录
@@ -23,15 +26,22 @@ class COCODataset(Dataset):
             std: 通道方差
             augment: 图片与bbox的转换方式
             normalize: 是否对图片进行归一化操作(均值为mean，方差为std)
+            multi_scale: 是否使用多尺度训练
         """
         self.images_root = images_root
         self.annotations_root = annotations_root
         self.images_list = self.__prepare_images_list__()
-        
+
+        self.image_size = image_size
         self.mean = mean
         self.std = std
         self.normalize = normalize
         self.augment = augment
+
+        self.multi_scale = multi_scale
+        self.max_size = image_size + 32 * 3
+        self.min_size = image_size - 32 * 3
+        self.batch_count = 0
 
     def __getitem__(self, index):
         """
@@ -47,11 +57,16 @@ class COCODataset(Dataset):
         image = Image.open(image_path).convert("RGB")
         categories_id, bboxes = self.__parse_annotation_txt__(annotation_path)
         image, bboxes = pad_to_square(image, bboxes, fill=0)
-        # data augmentation
-        image, bboxes, categories_id = self.augment(image, bboxes, categories_id)
 
-        # 归一化操作
-        compose = [T.ToTensor()]
+        # data augmentation
+        if self.augment is not None:
+            image, bboxes, categories_id = self.augment(image, bboxes, categories_id)
+
+        # Resize + ToTensor
+        compose = [
+            T.Resize(self.image_size),
+            T.ToTensor()
+        ]
         if self.normalize:
             compose.append(T.Normalize(self.mean, self.std))
         transform_compose = T.Compose(compose)
@@ -81,8 +96,16 @@ class COCODataset(Dataset):
             targets = torch.cat(targets, dim=0)
         except:
             targets = None
+
+        #  多尺度变换
+        if self.multi_scale and self.batch_count % 10 == 0:
+            random_image_size = random.choice(range(self.min_size, self.max_size + 1, 32))
+            images = [self.__resize__(image, random_image_size) for image in images]
         images = torch.stack(images)
         return paths, images, targets
+
+    def __resize__(self, image, image_size):
+        return F.interpolate(image.unsqueeze(0), size=image_size, mode="nearest").squeeze(0)
 
     def __prepare_images_list__(self):
         annotations_files = os.listdir(self.annotations_root)

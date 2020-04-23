@@ -26,18 +26,21 @@ class Prepare(object):
         return model
 
     def create_dataloader(self, config):
+        print("Creating dataloader.")
         my_get_dataloader = GetDataLoader(
             config["train_images_root"],
             config["train_annotations_root"],
             config["val_images_root"],
             config["val_annotations_root"],
+            config["image_size"],
             config["mean"],
             config["std"],
             config["dataset_format"],
             config["train_augmentation"],
             config["val_augmentation"],
             config["dataset"],
-            config["normalize"]
+            config["normalize"],
+            config["multi_scale"]
             )
         train_dataloader, val_dataloader = my_get_dataloader.get_dataloader(config["batch_size"])
         return train_dataloader, val_dataloader
@@ -95,10 +98,10 @@ class Prepare(object):
         elif lr_scheduler_type == 'MultiStepLR':
             if not multi_step:
                 raise ValueError('You must specified multi step when you are using MultiStepLR.')
-            my_lr_scheduler = lr_scheduler.MultiStepLR(optimizer, multi_step)            
+            my_lr_scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=multi_step, gamma=0.1)
         elif lr_scheduler_type == 'ReduceLR':
             my_lr_scheduler = lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=5)
         else:
-            raise NotImplementedError("Please supply a right lr_scheduler_tyoe.")
+            raise NotImplementedError("Please supply a right lr_scheduler_type.")
 
         return my_lr_scheduler
