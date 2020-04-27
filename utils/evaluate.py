@@ -120,6 +120,7 @@ def get_batch_statistics(outputs, targets, iou_threshold):
                 if pred_label not in target_labels:
                     continue
 
+                # target中与当前pred_box iou最大的一个
                 iou, box_index = bbox_iou(pred_box.unsqueeze(0), target_boxes).max(0)
                 if iou >= iou_threshold and box_index not in detected_boxes \
                         and pred_label == target_labels[box_index]:

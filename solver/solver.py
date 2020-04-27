@@ -45,7 +45,7 @@ class Solver:
 
             output = self.model(data)
             loss = self.criterion(output, target)
-            self._update_parameter(loss, iter_index)
+            self.__update_parameter__(loss, iter_index)
 
             epoch_loss += loss.item()
             self.logger.log_in_terminal(tbar, loss.item(), epoch, self.optimizer)
@@ -87,7 +87,7 @@ class Solver:
         self.logger.log_list_in_terminal("Val: ", evaluation_metrics, epoch)
         self.logger.log_list_in_tensorboard(evaluation_metrics, epoch)
 
-    def _update_parameter(self, loss, iterations):
+    def __update_parameter__(self, loss, iterations):
         loss.backward()
         if self.config["gradient_accumulation"] is not None:
             if iterations % self.config["gradient_accumulation"] == 0:

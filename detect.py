@@ -112,7 +112,7 @@ if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
     image_size = 416
-    weight_path = "checkpoints/backup/log-2020-04-23T14-54-52/weights/yolov3_59.pth"
+    weight_path = "checkpoints/backup/log-2020-04-25T17-53-38/weights/yolov3_59.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
     id_to_name_file = "data/oxfordhand/categories_id_to_name.json"

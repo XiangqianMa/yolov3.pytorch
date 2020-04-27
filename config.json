@@ -6,7 +6,7 @@
 
     "optimizer": "SGD",
     "lr": 1e-3,
-    "weight_decay": 5e-4,
+    "weight_decay": 0,
     "gradient_accumulation": 2,
 
     "batch_size": 8,
@@ -49,8 +49,8 @@
     "loss_weights": [1.0],
 
     "iou_thres": 0.5,
-    "conf_thres": 0.1,
-    "nms_thres": 0.5,
+    "conf_thres": 0.25,
+    "nms_thres": 0.4,
 
     "log_path": "checkpoints/backup"
 }
