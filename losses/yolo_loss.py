@@ -103,7 +103,8 @@ class YOLOLoss(nn.Module):
         """
         super(YOLOLoss, self).__init__()
         self.mse_loss = nn.MSELoss(reduction='none')
-        self.bce_loss = nn.BCELoss(reduction='none')
+        # self.bce_loss = nn.BCELoss(reduction='none')
+        self.bce_loss = nn.BCEWithLogitsLoss(reduction='none')
         self.object_scale = object_scale
         self.noobject_scale = noobject_scale
         self.ignore_thres = ignore_thres
@@ -124,7 +125,7 @@ class YOLOLoss(nn.Module):
 
             object_mask, noobject_mask, target_x, target_y, target_w, target_h, target_classes, target_confidence, raw_target_w, raw_target_h = build_targets(
                 pred_boxes=predict_bboxes,
-                pred_cls=classes_probablity,
+                pred_cls=torch.sigmoid(classes_probablity),
                 target=targets,
                 anchors=anchor_vector,
                 ignore_thres=self.ignore_thres,
@@ -132,8 +133,8 @@ class YOLOLoss(nn.Module):
 
             # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
             box_loss_scale = 2.0 - raw_target_w[object_mask] * raw_target_h[object_mask]
-            loss_x = (box_loss_scale * self.mse_loss(center_x[object_mask], target_x[object_mask])).mean()
-            loss_y = (box_loss_scale * self.mse_loss(center_y[object_mask], target_y[object_mask])).mean()
+            loss_x = (box_loss_scale * self.bce_loss(center_x[object_mask], target_x[object_mask])).mean()
+            loss_y = (box_loss_scale * self.bce_loss(center_y[object_mask], target_y[object_mask])).mean()
             loss_w = (0.5 * box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
             loss_h = (0.5 * box_loss_scale * self.mse_loss(height[object_mask], target_h[object_mask])).mean()
             # 置信度损失

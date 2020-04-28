@@ -43,7 +43,7 @@
             {
                 "object_scale": 1,
                 "noobject_scale": 100,
-                "ignore_thresh": 0.5
+                "ignore_thresh": 0.7
             }
     },
     "loss_weights": [1.0],

@@ -57,13 +57,13 @@ class YOLOLayer(nn.Module):
         :param image_size: 原始输入图片的大小
         :return: 训练时返回 [
                     predict_bboxes,  预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
-                    classes_probality, 类别概率
+                    classes_probality, 类别概率, 未sigmoid激活
                     anchor_vector, 使用stride归一化后的anchor
-                    center_x, 预测的原始中心点x坐标（相对于cell左上角的偏移值）
-                    center_y, 预测的原始中心点y坐标（相对于cell左上角的偏移值）
+                    center_x, 预测的原始中心点x坐标（相对于cell左上角的偏移值）, 未sigmoid激活
+                    center_y, 预测的原始中心点y坐标（相对于cell左上角的偏移值）, 未sigmoid激活
                     width, 宽度, log数据
                     height, 宽度，log数据
-                    confidence, 目标置信度       
+                    confidence, 目标置信度, 未sigmoid激活
                     ], 
                  测试时返回 predict, 所有的预测框，[batch_size, number_of_all_anchors, number_classes+5], 
                  number_of_all_anchors = grid_x * grid_y * number_anchors (每一个cell的anchor数目，默认为3)
@@ -79,26 +79,26 @@ class YOLOLayer(nn.Module):
                                self.number_x_grid).permute(0, 1, 3, 4, 2).contiguous()
 
         # 中心坐标、宽、高
-        center_x = torch.sigmoid(feature[..., 0])
-        center_y = torch.sigmoid(feature[..., 1])
+        center_x = feature[..., 0]
+        center_y = feature[..., 1]
         width = feature[..., 2]
         height = feature[..., 3]
         # 存在目标的置信度
-        confidence = torch.sigmoid(feature[..., 4])
+        confidence = feature[..., 4]
         # 各个类别的概率
-        classes_probality = torch.sigmoid(feature[..., 5:])
+        classes_probality = feature[..., 5:]
         # 向预测的bboxes的中心坐标加上偏移，向宽、高乘以尺度
         predict_bboxes = FloatTensor(feature[..., :4].shape)
-        predict_bboxes[..., 0] = center_x.data + self.grid_xy[..., 0]
-        predict_bboxes[..., 1] = center_y.data + self.grid_xy[..., 1]
+        predict_bboxes[..., 0] = torch.sigmoid(center_x).data + self.grid_xy[..., 0]
+        predict_bboxes[..., 1] = torch.sigmoid(center_y).data + self.grid_xy[..., 1]
         predict_bboxes[..., 2] = torch.exp(width.data) * self.anchor_wh[..., 0]
         predict_bboxes[..., 3] = torch.exp(height.data) * self.anchor_wh[..., 1]
 
         predict = torch.cat(
             [
                 predict_bboxes.view(batch_size, -1, 4) * self.stride,
-                confidence.view(batch_size, -1, 1),
-                classes_probality.view(batch_size, -1, self.number_classes),
+                torch.sigmoid(confidence).view(batch_size, -1, 1),
+                torch.sigmoid(classes_probality).view(batch_size, -1, self.number_classes),
             ], dim=-1,
         )
 
