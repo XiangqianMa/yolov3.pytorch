@@ -2,6 +2,9 @@
 # 数据增强文件
 #
 import numpy as np
+import random
+import cv2
+import os
 from PIL import Image
 from torchvision.transforms import Pad
 from albumentations import (
@@ -132,3 +135,94 @@ def pad_to_square(image, boxes, fill=0):
     boxes_numpy[:, 3] = (y2 - y1) / padded_h
     boxes = boxes_numpy.tolist()
     return image, boxes
+
+
+class MosaicAugment(object):
+    """实现mosaic数据增强，将四张图片拼凑在一张图片上
+    """
+    def __init__(self, image_size, images_list, labels_list):
+        self.image_size = image_size
+        self.images_list = images_list
+        self.labels_list = labels_list
+
+    def load_mosaic(self, index):
+        # loads images in a mosaic
+
+        labels4 = []
+        s = self.image_size
+        xc, yc = [int(random.uniform(s * 0.5, s * 1.5)) for _ in range(2)]  # mosaic center x, y
+        img4 = np.zeros((s * 2, s * 2, 3), dtype=np.uint8) + 128  # base image with 4 tiles
+        indices = [index] + [random.randint(0, len(self.images_list) - 1) for _ in range(3)]  # 3 additional image indices
+        for i, index in enumerate(indices):
+            # Load image
+            img = self.load_image(index)
+            h, w, _ = img.shape
+
+            # place img in img4
+            if i == 0:  # top left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), max(yc - h, 0), xc, yc  # xmin, ymin, xmax, ymax (large image)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), h - (y2a - y1a), w, h  # xmin, ymin, xmax, ymax (small image)
+            elif i == 1:  # top right
+                x1a, y1a, x2a, y2a = xc, max(yc - h, 0), min(xc + w, s * 2), yc
+                x1b, y1b, x2b, y2b = 0, h - (y2a - y1a), min(w, x2a - x1a), h
+            elif i == 2:  # bottom left
+                x1a, y1a, x2a, y2a = max(xc - w, 0), yc, xc, min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = w - (x2a - x1a), 0, max(xc, w), min(y2a - y1a, h)
+            elif i == 3:  # bottom right
+                x1a, y1a, x2a, y2a = xc, yc, min(xc + w, s * 2), min(s * 2, yc + h)
+                x1b, y1b, x2b, y2b = 0, 0, min(w, x2a - x1a), min(y2a - y1a, h)
+
+            img4[y1a:y2a, x1a:x2a] = img[y1b:y2b, x1b:x2b]  # img4[ymin:ymax, xmin:xmax]
+            padw = x1a - x1b
+            padh = y1a - y1b
+
+            # Load labels
+            label_path = self.labels_list[index]
+            if os.path.isfile(label_path):
+                with open(label_path, 'r') as f:
+                    x = np.array([x.split() for x in f.read().splitlines()], dtype=np.float32)
+
+                if x.size > 0:
+                    # Normalized xywh to pixel xyxy format
+                    labels = x.copy()
+                    labels[:, 1] = w * (x[:, 1] - x[:, 3] / 2) + padw
+                    labels[:, 2] = h * (x[:, 2] - x[:, 4] / 2) + padh
+                    labels[:, 3] = w * (x[:, 1] + x[:, 3] / 2) + padw
+                    labels[:, 4] = h * (x[:, 2] + x[:, 4] / 2) + padh
+
+                    labels4.append(labels)
+        labels4 = np.concatenate(labels4, 0)
+
+        # Center crop
+        a = s // 2
+        img4 = img4[a:a + s, a:a + s]
+        labels4[:, 1:] -= a
+
+        return img4, labels4
+
+    def load_image(self, index):
+        # loads 1 image from dataset
+        img_path = self.images_list[index]
+        img = cv2.imread(img_path)  # BGR
+        assert img is not None, 'Image Not Found ' + img_path
+        r = self.image_size / max(img.shape)  # size ratio
+        if r < 1:  # if training (NOT testing), downsize to inference shape
+            h, w, _ = img.shape
+            img = cv2.resize(img, (int(w * r), int(h * r)), interpolation=cv2.INTER_LINEAR)  # _LINEAR fastest
+
+        return img
+
+
+if __name__ == "__main__":
+    images_list = ["data/voc/train/2011_003269.jpg",
+                   "data/voc/train/2011_003271.jpg",
+                   "data/voc/train/2011_003275.jpg",
+                   "data/voc/train/2011_003276.jpg"]
+    labels_list = ["data/voc/train_txt/2011_003269.txt",
+                   "data/voc/train_txt/2011_003271.txt",
+                   "data/voc/train_txt/2011_003275.txt",
+                   "data/voc/train_txt/2011_003276.txt"]
+    mosaic_aug = MosaicAugment(416, images_list, labels_list)
+    image, labels = mosaic_aug.load_mosaic(1)
+    cv2.imwrite("masaic.jpg", image)
+    pass

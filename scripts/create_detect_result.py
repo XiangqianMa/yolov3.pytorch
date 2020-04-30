@@ -41,24 +41,19 @@ class Detect(object):
             # 坐标为[x1, y1, x2, y2]形式
             predict = predict.cpu().detach().numpy()
             predict = rescale_boxes(predict, self.image_size, image.shape[:2])
-            # [x1, y1, x2, y2] -> [x1, y1, w, h]
-            predict[..., :4] = corner_to_upleft(predict[..., :4])
             predict_boxes = predict[..., :4].tolist()
             predict_conf = predict[..., 4].tolist()
             predict_id = predict[..., -1].astype(int).tolist()
-            self.__log_predicts__(predict_conf, predict_id)
-            annotations = {
-                'image': image,
-                'bboxes': predict_boxes,
-                'category_id': predict_id,
-            }
-            image_with_bboxes = visualize(annotations, self.id_to_name)
-            image_with_bboxes = Image.fromarray(image_with_bboxes)
-            image_save_path = os.path.join(self.save_path, image_path.split('/')[-1])
-            print("@ Saving image to %s." % image_save_path)
-            image_with_bboxes.save(image_save_path)
+            target_path = os.path.join(self.save_path, image_path.split('/')[-1].replace('jpg', 'txt'))
+            with open(target_path, 'w') as f:
+                for id, conf, box in zip(predict_id, predict_conf, predict_boxes):
+                    line = self.id_to_name[str(id)] + " " + str(conf) + " " + " ".join([str(a) for a in box]) + "\n"
+                    f.write(line)
         else:
             print("@ No object in %s." % image_path)
+            target_path = os.path.join(self.save_path, image_path.split('/')[-1].replace('jpg', 'txt'))
+            print("@ Make empty file: %s." % target_path)
+            os.mknod(target_path)
         print("\n")
         pass
 
@@ -110,13 +105,13 @@ class Detect(object):
 
 if __name__ == "__main__":
     model_type = "darknet"
-    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
+    model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
     image_size = 416
-    weight_path = "checkpoints/backup/log-2020-04-29T09-23-29/weights/yolov3_49.pth"
-    image_root = "data/test_images"
+    weight_path = "checkpoints/backup/log-2020-04-29T17-56-52/weights/yolov3_39.pth"
+    image_root = "data/voc/test/"
     image_path = "data/test_images/000000217060.jpg"
-    id_to_name_file = "data/oxfordhand/categories_id_to_name.json"
-    save_path = "data/test_results"
+    id_to_name_file = "data/voc/categories_id_to_name.json"
+    save_path = "data/voc/detections"
     config = parse_config("config.json")
     detect = Detect(
         model_type,

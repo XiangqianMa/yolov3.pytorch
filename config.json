@@ -1,10 +1,10 @@
 {
     "model_type": "darknet",
-    "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
+    "model_cfg": "cfg/model_cfg/yolov3-voc.cfg",
     "pretrained_weight": "checkpoints/official_weights/yolov3.weights",
     "image_size": 416,
 
-    "optimizer": "SGD",
+    "optimizer": "Adam",
     "lr": 1e-3,
     "weight_decay": 0,
     "gradient_accumulation": 2,
@@ -23,10 +23,10 @@
     "val_interval": 1,
 
     "dataset": "coco",
-    "train_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/train",
-    "train_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/train",
-    "val_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/validation",
-    "val_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/validation",
+    "train_images_root": "data/voc/train",
+    "train_annotations_root": "data/voc/train_txt",
+    "val_images_root": "data/voc/test",
+    "val_annotations_root": "data/voc/test_txt",
     "official": false,
 
     "mean": [0.485, 0.456, 0.406],
@@ -41,16 +41,16 @@
     {
         "yolo_loss":
             {
-                "object_scale": 1,
-                "noobject_scale": 100,
+                "object_scale": 1.0,
+                "noobject_scale": 100.0,
                 "ignore_thresh": 0.7
             }
     },
     "loss_weights": [1.0],
 
-    "iou_thres": 0.5,
+    "iou_thres": 0.3,
     "conf_thres": 0.25,
-    "nms_thres": 0.4,
+    "nms_thres": 0.6,
 
     "log_path": "checkpoints/backup"
 }
