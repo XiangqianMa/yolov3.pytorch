@@ -5,6 +5,7 @@ import numpy as np
 import random
 import cv2
 import os
+import json
 from PIL import Image
 from torchvision.transforms import Pad
 from albumentations import (
@@ -16,6 +17,7 @@ from albumentations import (
 )
 
 from utils.bbox_convert import center_to_upleft, upleft_to_center
+from utils.visualize import visualize
 
 
 class DataAugment(object):
@@ -146,8 +148,15 @@ class MosaicAugment(object):
         self.labels_list = labels_list
 
     def load_mosaic(self, index):
-        # loads images in a mosaic
+        """
+        对四张样本进行mosaic增强
+        Args:
+            index: 必须包含的图片的索引
 
+        Returns:
+            img4: mosaic增强后的图片
+            labels4: img4对应的标签，labels4[:, 0]为标签，labels[:, 1:]为坐标[x1, y1, x2, y2]
+        """
         labels4 = []
         s = self.image_size
         xc, yc = [int(random.uniform(s * 0.5, s * 1.5)) for _ in range(2)]  # mosaic center x, y
@@ -197,8 +206,42 @@ class MosaicAugment(object):
         a = s // 2
         img4 = img4[a:a + s, a:a + s]
         labels4[:, 1:] -= a
+        labels4[labels4 < 0] = 0
+        labels4[labels4 > s] = s
 
+        #  去除无效的目标框
+        bboxes_w = labels4[:, 3] - labels4[:, 1]
+        bboxes_h = labels4[:, 4] - labels4[:, 2]
+        bboxes_w_invalid = bboxes_w < 10
+        bboxes_h_invalid = bboxes_h < 10
+        invalid_index = bboxes_w_invalid + bboxes_h_invalid
+        labels4 = labels4[~invalid_index]
         return img4, labels4
+
+    def label_to_yolo_format(self, image, labels):
+        """
+        将类标转换为yolo所需的格式
+        Args:
+            image: cv2格式的图片 BGR
+            labels: 目标框标注，labels[:, 0]为类标，labels[:, 1:]为目标框
+        Returns:
+            image: PIL.Image格式 RGB
+            category_id: 各个bboxes对应的类别id
+            converted_bboxes: yolo格式的标注框[center_x, center_y, w, h]
+        """
+        bboxes = labels[:, 1:]
+        category_id = labels[:, 0]
+        converted_bboxes = np.zeros_like(bboxes)
+        converted_bboxes[:, 0] = bboxes[:, 0] + (bboxes[:, 2] - bboxes[:, 0]) / 2
+        converted_bboxes[:, 1] = bboxes[:, 1] + (bboxes[:, 3] - bboxes[:, 1]) / 2
+        converted_bboxes[:, 2] = bboxes[:, 2] - bboxes[:, 0]
+        converted_bboxes[:, 3] = bboxes[:, 3] - bboxes[:, 1]
+        h, w, c = image.shape
+        converted_bboxes = converted_bboxes / h
+
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        image = Image.fromarray(image)
+        return image, category_id, converted_bboxes
 
     def load_image(self, index):
         # loads 1 image from dataset
@@ -214,15 +257,36 @@ class MosaicAugment(object):
 
 
 if __name__ == "__main__":
-    images_list = ["data/voc/train/2011_003269.jpg",
-                   "data/voc/train/2011_003271.jpg",
-                   "data/voc/train/2011_003275.jpg",
-                   "data/voc/train/2011_003276.jpg"]
-    labels_list = ["data/voc/train_txt/2011_003269.txt",
-                   "data/voc/train_txt/2011_003271.txt",
-                   "data/voc/train_txt/2011_003275.txt",
-                   "data/voc/train_txt/2011_003276.txt"]
-    mosaic_aug = MosaicAugment(416, images_list, labels_list)
-    image, labels = mosaic_aug.load_mosaic(1)
-    cv2.imwrite("masaic.jpg", image)
+    images_dir = "data/voc/train"
+    labels_dir = "data/voc/train_txt"
+    files = os.listdir(images_dir)
+    for sample_index in range(10):
+        selected = random.choices(files, k=4)
+        images_list = [os.path.join(images_dir, a) for a in selected]
+        labels_list = [os.path.join(labels_dir, a.replace("jpg", "txt")) for a in selected]
+
+        mosaic_aug = MosaicAugment(416, images_list, labels_list)
+        index = random.randint(0, 3)
+        image, labels = mosaic_aug.load_mosaic(index)
+        bboxes = labels[:, 1:].tolist()
+        category_id = labels[:, 0].tolist()
+        for i, bbox in enumerate(bboxes):
+            x1, y1, x2, y2 = bbox
+            bbox[2] = x2 - x1
+            bbox[3] = y2 - y1
+            bboxes[i] = bbox
+            category_id[i] = int(category_id[i])
+
+        print(category_id)
+        annotations = {
+            'image': image,
+            'bboxes': bboxes,
+            'category_id': category_id
+        }
+
+        with open('data/voc/categories_id_to_name.json', 'r') as f:
+            categories_id_to_name = json.load(f)
+
+        image = visualize(annotations, categories_id_to_name, show=False)
+        cv2.imwrite("masaic_%d.jpg" % sample_index, image)
     pass

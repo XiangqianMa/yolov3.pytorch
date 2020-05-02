@@ -40,7 +40,8 @@ class Prepare(object):
             config["val_augmentation"],
             config["dataset"],
             config["normalize"],
-            config["multi_scale"]
+            config["multi_scale"],
+            config["mosaic"]
             )
         train_dataloader, val_dataloader = my_get_dataloader.get_dataloader(config["batch_size"])
         return train_dataloader, val_dataloader

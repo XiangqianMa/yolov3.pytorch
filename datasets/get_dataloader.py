@@ -20,7 +20,8 @@ class GetDataLoader(object):
         val_augmentation=None,
         dataset="coco",
         normalize=False,
-        multi_scale=False
+        multi_scale=False,
+        mosaic=False
     ):
         self.dataset = dataset
 
@@ -38,14 +39,16 @@ class GetDataLoader(object):
         self.normalize = normalize
         self.multi_scale = multi_scale
         self.dataset_format = dataset_format
+
+        self.mosaic = mosaic
     
     def get_dataloader(self, batch_size):
         train_augment = self.__get_data_augment__(self.train_augmentation)
         train_datset = self.__get_dataset__(self.train_images_root, self.train_annotations_root, train_augment,
-                                            True, self.multi_scale)
+                                            True, self.multi_scale, self.mosaic)
         val_augment = self.__get_data_augment__(self.val_augmentation)
         val_dataset = self.__get_dataset__(self.val_images_root, self.val_annotations_root, val_augment,
-                                           False, False)
+                                           False, False, False)
 
         train_dataloader = DataLoader(train_datset, batch_size=batch_size, num_workers=8, pin_memory=True,
                                       shuffle=True, collate_fn=train_datset.collate_fn)
@@ -60,7 +63,7 @@ class GetDataLoader(object):
             augment = DataAugment(aug=augmentation, dataset_format=self.dataset_format)
         return augment
     
-    def __get_dataset__(self, images_root, annotations_root, augment, augment_flag=True, multi_scale=True):
+    def __get_dataset__(self, images_root, annotations_root, augment, augment_flag=True, multi_scale=True, mosaic=False):
         dataset = None
         print("@ Dataset: %s." % self.dataset)
         if self.dataset == 'official':
@@ -68,7 +71,7 @@ class GetDataLoader(object):
         elif self.dataset == 'coco':
             dataset = COCODataset(images_root, annotations_root, self.image_size, self.mean,
                                   self.std, augment=augment,
-                                  normalize=self.normalize, multi_scale=multi_scale)
+                                  normalize=self.normalize, multi_scale=multi_scale, mosaic=mosaic)
         elif self.dataset == 'oxfordhand':
             dataset = OxfordDataset(images_root, annotations_root, self.image_size, augment_flag, multi_scale)
         return dataset

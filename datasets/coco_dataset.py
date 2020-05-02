@@ -12,12 +12,12 @@ import torch.nn.functional as F
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 
-from datasets.data_augment import DataAugment, pad_to_square
+from datasets.data_augment import DataAugment, pad_to_square, MosaicAugment
 
 
 class COCODataset(Dataset):
     def __init__(self, images_root, annotations_root, image_size, mean, std, augment=None, normalize=False,
-                 multi_scale=False):
+                 multi_scale=False, mosaic=False):
         """
         Args:
             images_root: 存放原始图片的根目录
@@ -43,6 +43,12 @@ class COCODataset(Dataset):
         self.min_size = image_size - 32 * 3
         self.batch_count = 0
 
+        self.mosaic = mosaic
+        if self.mosaic:
+            labels_list = [os.path.join(self.annotations_root, file_name.split('/')[-1].replace('jpg', 'txt'))
+                           for file_name in self.images_list]
+            self.mosaic_augment = MosaicAugment(self.image_size, self.images_list, labels_list)
+
     def __getitem__(self, index):
         """
         Return:
@@ -53,12 +59,16 @@ class COCODataset(Dataset):
         """
         image_path = self.images_list[index]
         annotation_path = os.path.join(self.annotations_root, image_path.split('/')[-1].replace('jpg', 'txt'))
-        # 读取与padding
-        image = Image.open(image_path).convert("RGB")
-        categories_id, bboxes = self.__parse_annotation_txt__(annotation_path)
-        image, bboxes = pad_to_square(image, bboxes, fill=0)
+        if self.mosaic and random.random() < 0.5:
+            image, labels = self.mosaic_augment.load_mosaic(index)
+            image, categories_id, bboxes = self.mosaic_augment.label_to_yolo_format(image, labels)
+        else:
+            # 读取与padding
+            image = Image.open(image_path).convert("RGB")
+            categories_id, bboxes = self.__parse_annotation_txt__(annotation_path)
+            image, bboxes = pad_to_square(image, bboxes, fill=0)
 
-        # data augmentation
+        # 普通的数据增强，如翻转等
         if self.augment is not None:
             image, bboxes, categories_id = self.augment(image, bboxes, categories_id)
 
@@ -72,10 +82,12 @@ class COCODataset(Dataset):
         transform_compose = T.Compose(compose)
         image = transform_compose(image)
 
-        # categories_id_bboxes[:, 0]用于存放当前样本在batch中的编号
-        categories_id_bboxes = torch.zeros((len(bboxes), 6))
-        categories_id_bboxes[:, 2:] = torch.Tensor(bboxes)
-        categories_id_bboxes[:, 1] = torch.Tensor(categories_id)
+        categories_id_bboxes = None
+        if len(bboxes) > 0:
+            # categories_id_bboxes[:, 0]用于存放当前样本在batch中的编号
+            categories_id_bboxes = torch.zeros((len(bboxes), 6))
+            categories_id_bboxes[:, 2:] = torch.Tensor(bboxes)
+            categories_id_bboxes[:, 1] = torch.Tensor(categories_id)
 
         return image_path, image, categories_id_bboxes
     
@@ -89,6 +101,7 @@ class COCODataset(Dataset):
         # 过滤不存在boxes的样本
         for sample_index, categories_id_bboxes in enumerate(targets):
             if categories_id_bboxes is None:
+                print("None")
                 continue
             categories_id_bboxes[:, 0] = sample_index
         targets = [categories_id_bboxes for categories_id_bboxes in targets if categories_id_bboxes is not None]
@@ -142,7 +155,7 @@ if __name__ == '__main__':
     mean = (0.485, 0.456, 0.406)
     std = (0.229, 0.224, 0.225)
     data_augment = DataAugment()
-    dataset = COCODataset(images_root, annotations_root, mean, std, data_augment, False)
+    dataset = COCODataset(images_root, annotations_root, image_size, mean, std, None, False, False, True)
     for i in range(len(dataset)):
         _, image, targets = dataset[i]
     pass
