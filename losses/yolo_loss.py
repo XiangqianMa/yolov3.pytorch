@@ -2,6 +2,8 @@ from __future__ import division
 import torch
 import torch.nn as nn
 
+from losses.focal_loss import FocalLoss
+from losses.giou_loss import GIoULoss, bbox_transfer
 from utils.calculate_iou import bbox_wh_iou, bbox_iou
 from utils.util import to_cpu
 
@@ -93,7 +95,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres):
 class YOLOLoss(nn.Module):
     """计算损失，并打印统计参数
     """
-    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100):
+    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw'):
         """
         
         Args:
@@ -103,12 +105,16 @@ class YOLOLoss(nn.Module):
         """
         super(YOLOLoss, self).__init__()
         self.mse_loss = nn.MSELoss(reduction='none')
-        # self.bce_loss = nn.BCELoss(reduction='none')
         self.bce_loss = nn.BCEWithLogitsLoss(reduction='none')
+        self.focal_loss = FocalLoss(gamma=2, alpha=1.0, reduction='none')
+        self.giou_loss = GIoULoss(reduction='none')
+
         self.object_scale = object_scale
         self.noobject_scale = noobject_scale
         self.ignore_thres = ignore_thres
         self.metric = []
+
+        self.bbox_loss = bbox_loss
     
     def forward(self, predicts, targets):
         loss = 0
@@ -131,19 +137,30 @@ class YOLOLoss(nn.Module):
                 ignore_thres=self.ignore_thres,
             )
 
-            # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
-            box_loss_scale = 2.0 - raw_target_w[object_mask] * raw_target_h[object_mask]
-            loss_x = (box_loss_scale * self.bce_loss(center_x[object_mask], target_x[object_mask])).mean()
-            loss_y = (box_loss_scale * self.bce_loss(center_y[object_mask], target_y[object_mask])).mean()
-            loss_w = (0.5 * box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
-            loss_h = (0.5 * box_loss_scale * self.mse_loss(height[object_mask], target_h[object_mask])).mean()
+            loss_bbox = 0
+            if self.bbox_loss == 'raw':
+                # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
+                box_loss_scale = 2.0 - raw_target_w[object_mask] * raw_target_h[object_mask]
+                loss_x = (box_loss_scale * self.bce_loss(center_x[object_mask], target_x[object_mask])).mean()
+                loss_y = (box_loss_scale * self.bce_loss(center_y[object_mask], target_y[object_mask])).mean()
+                loss_w = (0.5 * box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
+                loss_h = (0.5 * box_loss_scale * self.mse_loss(height[object_mask], target_h[object_mask])).mean()
+                loss_bbox = loss_x + loss_y + loss_w + loss_h
+            elif self.bbox_loss == 'GIoU':
+                predict_bboxes_converted = bbox_transfer(center_x[object_mask], center_y[object_mask],
+                                                         width[object_mask], height[object_mask])
+                target_bboxes_converted = bbox_transfer(target_x[object_mask], target_y[object_mask],
+                                                        target_w[object_mask], target_h[object_mask])
+                loss_bbox = self.giou_loss(predict_bboxes_converted, target_bboxes_converted)
+
             # 置信度损失
             loss_conf_object = self.bce_loss(confidence[object_mask], target_confidence[object_mask])
             loss_conf_noobject = self.bce_loss(confidence[noobject_mask], target_confidence[noobject_mask])
             loss_conf = self.object_scale * loss_conf_object.mean() + self.noobject_scale * loss_conf_noobject.mean()
+
             # 类别损失
             loss_cls = self.bce_loss(classes_probablity[object_mask], target_classes[object_mask]).mean()
-            current_total_loss = loss_x + loss_y + loss_w + loss_h + loss_conf + loss_cls
+            current_total_loss = loss_bbox + loss_conf + loss_cls
 
             loss += current_total_loss
         return loss

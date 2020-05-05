@@ -1,39 +1,40 @@
 {
     "model_type": "darknet",
-    "model_cfg": "cfg/model_cfg/yolov3-voc.cfg",
+    "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
     "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
     "image_size": 416,
 
     "optimizer": "SGD",
     "lr": 1e-4,
     "weight_decay": 0,
-    "gradient_accumulation": 2,
+    "gradient_accumulation": null,
 
-    "batch_size": 20,
+    "batch_size": 8,
     "start_epoch": 0,
-    "epoch": 150,
+    "epoch": 160,
 
-    "lr_scheduler_type": "StepLR",
+    "lr_scheduler_type": "MultiStepLR",
     "step_size": 60,
     "restart_step": null,
-    "multi_step": [90, 105],
+    "multi_step": [60, 90],
 
     "log_iteration": 10,
     "save_weight_interval": 10,
     "val_interval": 1,
+    "val_after": 20,
 
     "dataset": "coco",
-    "train_images_root": "data/voc/train",
-    "train_annotations_root": "data/voc/train_txt",
-    "val_images_root": "data/voc/test",
-    "val_annotations_root": "data/voc/test_txt",
+    "train_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/trainval",
+    "train_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/trainval",
+    "val_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/test",
+    "val_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/test",
     "official": false,
 
     "mean": [0.485, 0.456, 0.406],
     "std": [0.229, 0.224, 0.225],
     "normalize": false,
     "multi_scale": true,
-    "mosaic": true,
+    "mosaic": false,
     "dataset_format": "coco",
     "train_augmentation": null,
     "val_augmentation": null,
@@ -43,15 +44,15 @@
         "yolo_loss":
             {
                 "object_scale": 1.0,
-                "noobject_scale": 100.0,
-                "ignore_thresh": 0.7
+                "noobject_scale": 1.0,
+                "ignore_thresh": 0.5
             }
     },
     "loss_weights": [1.0],
 
-    "iou_thres": 0.3,
-    "conf_thres": 0.25,
-    "nms_thres": 0.6,
+    "iou_thres": 0.5,
+    "conf_thres": 0.01,
+    "nms_thres": 0.5,
 
     "log_path": "checkpoints/backup"
 }

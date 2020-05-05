@@ -55,7 +55,7 @@ class Solver:
         self.logger.log_in_tensorboard("epoch-loss", epoch_loss / len(tbar), epoch)
         self.logger.save_weight(self.model, epoch)
 
-        if self.do_validation and (epoch + 1) % self.config["val_interval"] == 0:
+        if self.do_validation and (epoch + 1) % self.config["val_interval"] == 0 and epoch > self.config["val_after"]:
             self.__valid_epoch__(epoch)
 
         if self.lr_scheduler is not None:
