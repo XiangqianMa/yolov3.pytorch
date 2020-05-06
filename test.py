@@ -49,11 +49,11 @@ class Test(object):
 
 if __name__ == "__main__":
     model_type = "darknet"
-    model_cfg = "cfg/model_cfg/yolov3.cfg"
-    image_size = 416
-    weight_path = "checkpoints/official_weights/yolov3.weights"
-    images_root = "data/coco/val2017"
-    annotations_root = "data/coco/val2017_txt"
+    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
+    image_size = 448
+    weight_path = "checkpoints/backup/log-2020-05-05T14-38-42/weights/yolov3_69.pth"
+    images_root = "/mnt/program/YOLOv3-model-pruning/data/images/test"
+    annotations_root = "/mnt/program/YOLOv3-model-pruning/data/labels/test"
 
     test = Test(model_type, model_cfg, image_size, weight_path, images_root, annotations_root)
     precision, recall, AP, f1, ap_class = test()

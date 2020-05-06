@@ -21,7 +21,7 @@
     "log_iteration": 10,
     "save_weight_interval": 10,
     "val_interval": 1,
-    "val_after": 20,
+    "val_after": 0,
 
     "dataset": "coco",
     "train_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/trainval",
@@ -44,8 +44,9 @@
         "yolo_loss":
             {
                 "object_scale": 1.0,
-                "noobject_scale": 1.0,
-                "ignore_thresh": 0.5
+                "noobject_scale": 100.0,
+                "ignore_thresh": 0.5,
+                "bbox_loss": "GIoU"
             }
     },
     "loss_weights": [1.0],
