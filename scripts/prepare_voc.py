@@ -6,7 +6,7 @@ import json
 from os import getcwd
 
 
-sets = ['test']
+sets = ['train', 'test']
 # classes
 classes = [
     "aeroplane", "bicycle", "bird", "boat", "bottle", "bus", "car", 
@@ -14,15 +14,15 @@ classes = [
     "person", "pottedplant", "sheep", "sofa", "train", "tvmonitor"
     ]
 # the path of JPEGImages
-image_path = "data/VOCdevkit/JPEGImages"
+image_path = "data/voc/JPEGImages"
 # the path where you want to put your label files in
 target_label_path_root = "data/voc"
 # the path of original annotation
-annotation_path = "data/VOCdevkit/Annotations"
+annotation_path = "data/voc/Annotations"
 # the path where you want to put your image path files in
 target_image_path_root = "data/voc"
 # the path of train.txt and val.txt
-dataset_separate_path = "data/VOCdevkit/ImageSets/Main"
+dataset_separate_path = "data/voc/ImageSets/Main"
 json_path = "data/voc/categories_id_to_name.json"
 
 
