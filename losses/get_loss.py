@@ -32,7 +32,8 @@ class GetLoss(Module):
                 assert ('object_scale' in param.keys() and 'noobject_scale' in param.keys()
                         and 'ignore_thresh' in param.keys() and 'bbox_loss' in param.keys())
                 losses.append(YOLOLoss(ignore_thres=param['ignore_thresh'], object_scale=param['object_scale'],
-                                       noobject_scale=param['noobject_scale'], bbox_loss=param['bbox_loss']))
+                                       noobject_scale=param['noobject_scale'], bbox_loss=param['bbox_loss'],
+                                       iou_type=param['iou_type']))
             else:
                 raise NotImplementedError
         return losses

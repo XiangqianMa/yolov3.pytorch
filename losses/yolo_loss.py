@@ -4,11 +4,11 @@ import torch.nn as nn
 
 from losses.focal_loss import FocalLoss
 from losses.giou_loss import GIoULoss, bbox_transfer
-from utils.calculate_iou import bbox_wh_iou, bbox_iou
+from utils.calculate_iou import bbox_wh_iou, bbox_wh_giou, bbox_iou
 from utils.util import to_cpu
 
 
-def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss='raw'):
+def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss='raw', iou_type='iou'):
     """依据网络的预测值和真实值计算与各个anchor所匹配的ground truth
 
     Args:
@@ -62,7 +62,10 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss
     ground_wh = target_bboxes[:, 2:]
     raw_ground_wh = target[:, 4:6]
     # 计算当前的anchor与ground_wh的iou（将anchor和ground_wh在左上角对齐）
-    ious = torch.stack([bbox_wh_iou(anchor, ground_wh) for anchor in anchors])
+    if iou_type == 'iou':
+        ious = torch.stack([bbox_wh_iou(anchor, ground_wh) for anchor in anchors])
+    elif iou_type == 'giou':
+        ious = torch.stack([bbox_wh_giou(anchor, ground_wh) for anchor in anchors])
     # 与每个ground_truth的IoU最大的anchor
     best_ious, best_n = ious.max(0)
 
@@ -105,7 +108,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss
 class YOLOLoss(nn.Module):
     """计算损失，并打印统计参数
     """
-    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw'):
+    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw', iou_type='iou'):
         """
         
         Args:
@@ -125,6 +128,7 @@ class YOLOLoss(nn.Module):
         self.metric = []
 
         self.bbox_loss = bbox_loss
+        self.iou_type = iou_type
     
     def forward(self, predicts, targets):
         loss = 0
@@ -145,7 +149,8 @@ class YOLOLoss(nn.Module):
                 target=targets,
                 anchors=anchor_vector,
                 ignore_thres=self.ignore_thres,
-                bbox_loss=self.bbox_loss
+                bbox_loss=self.bbox_loss,
+                iou_type=self.iou_type
             )
 
             loss_bbox = 0
