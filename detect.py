@@ -14,13 +14,14 @@ from utils.bbox_convert import pad_to_square, resize
 
 
 class Detect(object):
-    def __init__(self, model_type, model_cfg, image_size, weight_path, id_to_name_file, save_path):
+    def __init__(self, model_type, model_cfg, image_size, weight_path, id_to_name_file, save_path, iou_type='iou'):
         self.model_type = model_type
         self.model_cfg = model_cfg
         self.image_size = image_size
         self.weight_path = weight_path
         self.id_to_name = self.__prepare_id_to_name__(id_to_name_file)
         self.save_path = save_path
+        self.iou_type = iou_type
 
         self.__prepare_model__()
 
@@ -33,7 +34,7 @@ class Detect(object):
             end_time = time.time()
             print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
             start_time = time.time()
-            predict = non_max_suppression(predict, conf_thres, nms_thres)[0]
+            predict = non_max_suppression(predict, conf_thres, nms_thres, iou_type=self.iou_type)[0]
             end_time = time.time()
             print("@ NMS took %d ms." % ((end_time - start_time) * 1000))
 
@@ -112,7 +113,8 @@ if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
     image_size = 416
-    weight_path = "checkpoints/backup/log-2020-04-29T09-23-29/weights/yolov3_49.pth"
+    iou_type = "giou"
+    weight_path = "checkpoints/backup/log-2020-05-08T08-42-50/weights/yolov3_49.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
     id_to_name_file = "data/oxfordhand/categories_id_to_name.json"
@@ -124,10 +126,11 @@ if __name__ == "__main__":
         image_size,
         weight_path,
         id_to_name_file,
-        save_path
+        save_path,
+        iou_type=iou_type
     )
 
-    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.5, 0.4)
+    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.1, 0.5)
 
     # detect.detect_single_image(
     #     image_path,

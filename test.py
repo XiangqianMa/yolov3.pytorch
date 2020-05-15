@@ -12,13 +12,14 @@ from utils.evaluate import evaluate
 
 
 class Test(object):
-    def __init__(self, model_type, model_cfg, image_size, weight_path, images_root, annotations_root):
+    def __init__(self, model_type, model_cfg, image_size, weight_path, images_root, annotations_root, iou_type='iou'):
         self.model_type = model_type
         self.model_cfg = model_cfg
         self.image_size = image_size
         self.weight_path = weight_path
         self.images_root = images_root
         self.annotations_root = annotations_root
+        self.iou_type = iou_type
 
         self.model = None
         self.__prepare_model__()
@@ -26,7 +27,7 @@ class Test(object):
         self.__prepare_data__()
 
     def __call__(self):
-        return evaluate(self.model, self.dataloader, 0.5, 0.5, 0.5, self.image_size)
+        return evaluate(self.model, self.dataloader, 0.5, 0.5, 0.5, self.image_size, iou_type=self.iou_type)
 
     def __prepare_data__(self):
         dataset = COCODataset(self.images_root, self.annotations_root, self.image_size, mean=None, std=None)
@@ -51,11 +52,12 @@ if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
     image_size = 448
+    iou_type = "iou"
     weight_path = "checkpoints/backup/log-2020-05-05T14-38-42/weights/yolov3_69.pth"
     images_root = "/mnt/program/YOLOv3-model-pruning/data/images/test"
     annotations_root = "/mnt/program/YOLOv3-model-pruning/data/labels/test"
 
-    test = Test(model_type, model_cfg, image_size, weight_path, images_root, annotations_root)
+    test = Test(model_type, model_cfg, image_size, weight_path, images_root, annotations_root, iou_type=iou_type)
     precision, recall, AP, f1, ap_class = test()
     print("Precision: %.4f \n Recall: %.4f \n mAP: %.4f \n f1: %.4f" % (
         precision.mean(), recall.mean(), AP.mean(), f1.mean()))

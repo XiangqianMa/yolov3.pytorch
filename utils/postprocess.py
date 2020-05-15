@@ -1,10 +1,10 @@
 import numpy as np
 import torch
 from utils.bbox_convert import xywh2xyxy
-from utils.calculate_iou import bbox_iou
+from utils.calculate_iou import bbox_iou, bbox_giou
 
 
-def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5):
+def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5, iou_type="iou"):
     """分类别对预测框进行NMS处理，在去除重复的目标框时采取的方法是将大于nms_thres的目标框加权到该类别得分最高的目标框的方式。
        权重为各目标框存在目标的置信度
 
@@ -36,7 +36,10 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5):
         keep_boxes = []
         while detections.size(0):
             # 计算分数最高的bbox与其余bboxs的iou，并使用nms_thres进行过滤
-            lager_overlap = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4]) > nms_thres
+            if iou_type == "iou":
+                lager_overlap = bbox_iou(detections[0, :4].unsqueeze(0), detections[:, :4]) > nms_thres
+            elif iou_type == "giou":
+                lager_overlap = bbox_giou(detections[0, :4].unsqueeze(0), detections[:, :4]) > nms_thres
             same_class = detections[0, -1] == detections[:, -1]
             # 过滤掉属于同一类别的，且与最高分数的目标框的IoU大于nms_thres的目标框
             invalid_index = lager_overlap & same_class

@@ -5,22 +5,22 @@
     "image_size": 416,
 
     "optimizer": "SGD",
-    "lr": 1e-4,
+    "lr": 1e-3,
     "weight_decay": 0,
     "gradient_accumulation": null,
 
     "batch_size": 8,
     "start_epoch": 0,
-    "epoch": 160,
+    "epoch": 100,
 
-    "lr_scheduler_type": "MultiStepLR",
+    "lr_scheduler_type": "CosineLR",
     "step_size": 60,
-    "restart_step": null,
+    "restart_step": 110,
     "multi_step": [60, 90],
 
     "log_iteration": 10,
     "save_weight_interval": 10,
-    "val_interval": 1,
+    "val_interval": 5,
     "val_after": 0,
 
     "dataset": "coco",
@@ -46,7 +46,8 @@
                 "object_scale": 1.0,
                 "noobject_scale": 100.0,
                 "ignore_thresh": 0.5,
-                "bbox_loss": "GIoU"
+                "bbox_loss": "GIoU",
+                "iou_type": "giou"
             }
     },
     "loss_weights": [1.0],
@@ -54,6 +55,7 @@
     "iou_thres": 0.5,
     "conf_thres": 0.01,
     "nms_thres": 0.5,
+    "test_iou_type": "iou",
 
     "log_path": "checkpoints/backup"
 }

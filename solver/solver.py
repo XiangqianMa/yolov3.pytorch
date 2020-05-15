@@ -74,7 +74,8 @@ class Solver:
             self.config["iou_thres"],
             self.config["conf_thres"],
             self.config["nms_thres"],
-            self.config["image_size"]
+            self.config["image_size"],
+            self.config["test_iou_type"]
         )
 
         evaluation_metrics = [

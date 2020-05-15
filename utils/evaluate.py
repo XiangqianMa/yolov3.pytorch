@@ -3,7 +3,7 @@ import numpy as np
 import tqdm
 from utils.bbox_convert import xywh2xyxy
 from utils.postprocess import non_max_suppression
-from utils.calculate_iou import bbox_iou
+from utils.calculate_iou import bbox_iou, bbox_giou
 
 
 def ap_per_class(tp, conf, pred_cls, target_cls):
@@ -89,7 +89,7 @@ def compute_ap(recall, precision):
     return ap
 
 
-def get_batch_statistics(outputs, targets, iou_threshold):
+def get_batch_statistics(outputs, targets, iou_threshold, iou_type="iou"):
     """ Compute true positives, predicted scores and predicted labels per sample """
     batch_metrics = []
     for sample_i in range(len(outputs)):
@@ -120,8 +120,11 @@ def get_batch_statistics(outputs, targets, iou_threshold):
                 if pred_label not in target_labels:
                     continue
 
-                # target中与当前pred_box iou最大的一个
-                iou, box_index = bbox_iou(pred_box.unsqueeze(0), target_boxes).max(0)
+                if iou_type == "iou":
+                    # target中与当前pred_box iou最大的一个
+                    iou, box_index = bbox_iou(pred_box.unsqueeze(0), target_boxes).max(0)
+                elif iou_type == "giou":
+                    iou, box_index = bbox_giou(pred_box.unsqueeze(0), target_boxes).max(0)
                 if iou >= iou_threshold and box_index not in detected_boxes \
                         and pred_label == target_labels[box_index]:
                     true_positives[pred_i] = 1
@@ -130,7 +133,7 @@ def get_batch_statistics(outputs, targets, iou_threshold):
     return batch_metrics
 
 
-def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size):
+def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size, iou_type='iou'):
     model.eval()
     labels = []
     sample_metrics = []  # List of tuples (TP, confs, pred)
@@ -145,9 +148,9 @@ def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size):
 
         with torch.no_grad():
             outputs = model(imgs)
-            outputs = non_max_suppression(outputs.cpu(), conf_thres=conf_thres, nms_thres=nms_thres)
+            outputs = non_max_suppression(outputs.cpu(), conf_thres=conf_thres, nms_thres=nms_thres, iou_type=iou_type)
 
-        sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres)
+        sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres, iou_type=iou_type)
 
     # Concatenate sample statistics
     true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]

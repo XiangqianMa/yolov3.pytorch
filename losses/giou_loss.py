@@ -23,7 +23,7 @@ class GIoULoss(nn.Module):
         gt_area = (gt_bboxes[:, 2] - gt_bboxes[:, 0]) * (gt_bboxes[:, 3] - gt_bboxes[:, 1])
         pr_area = (pr_bboxes[:, 2] - pr_bboxes[:, 0]) * (pr_bboxes[:, 3] - pr_bboxes[:, 1])
 
-        # iou  TODO 进一步确认GIoU的计算方式
+        # iou
         lt = torch.max(gt_bboxes[:, :2], pr_bboxes[:, :2])
         rb = torch.min(gt_bboxes[:, 2:], pr_bboxes[:, 2:])
         wh = (rb - lt).clamp(min=0)
@@ -68,10 +68,10 @@ def bbox_transfer(center_x, center_y, w, h, grid_x, grid_y):
     y2 = center_y + h / 2.0
 
     # 处理超过边界的值
-    x1[x1 < 0] = 0  # TODO 这块是否可以换成torch的操作？
-    x2[x2 > grid_x] = grid_x
-    y1[y1 < 0] = 0
-    y2[y2 > grid_y] = grid_y
+    x1 = x1.clamp(min=0)
+    x2 = x2.clamp(max=grid_x)
+    y1 = y1.clamp(min=0)
+    y2 = y2.clamp(max=grid_y)
 
     bbox_converted = torch.zeros(center_x.size()[0], 4).type_as(center_x)
     bbox_converted[:, 0] = x1
