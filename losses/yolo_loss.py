@@ -173,11 +173,6 @@ class YOLOLoss(nn.Module):
                                                         target_w[object_mask], target_h[object_mask], grid_x, grid_y)
                 loss_bbox = self.giou_loss(predict_bboxes_converted, target_bboxes_converted).mean()
 
-                if loss_bbox.item() < 0:
-                    print("\n", loss_bbox)
-                    print("bboxes", predict_bboxes_converted)
-                    print("target", target_bboxes_converted)
-
             # 置信度损失
             loss_conf_object = self.bce_loss(confidence[object_mask], target_confidence[object_mask])
             loss_conf_noobject = self.bce_loss(confidence[noobject_mask], target_confidence[noobject_mask])

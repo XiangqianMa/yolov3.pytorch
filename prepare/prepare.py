@@ -4,6 +4,8 @@ from torch.optim import lr_scheduler
 from models.get_model import GetModel
 from losses.get_loss import GetLoss
 from datasets.get_dataloader import GetDataLoader
+from utils.torch_utils import model_info
+from compression.prune.sparsity_train import SparsityTrain
 
 
 class Prepare(object):
@@ -22,6 +24,7 @@ class Prepare(object):
         """
         print('Loading model cfg: {}'.format(model_cfg))
         model = GetModel(model_type).get_model(model_cfg=model_cfg, image_size=image_size, pretrained_weight=pretrained_weight)
+        model_info(model, report='summary')
         model = torch.nn.DataParallel(model).cuda()
         return model
 
@@ -106,3 +109,11 @@ class Prepare(object):
             raise NotImplementedError("Please supply a right lr_scheduler_type.")
 
         return my_lr_scheduler
+
+    def create_sparsity_train(self, module_defs, config):
+        sparsity_train = None
+        if config['sparsity_train']:
+            print("@ Using sparsity train.")
+            sparse_scale_rate = config["sparse_scale_rate"]
+            sparsity_train = SparsityTrain(module_defs, sparse_scale_rate)
+        return sparsity_train

@@ -91,7 +91,7 @@ class YOLOLayer(nn.Module):
         classes_probality = feature[..., 5:]
         # 向预测的bboxes的中心坐标加上偏移，向宽、高乘以尺度
         predict_bboxes = FloatTensor(feature[..., :4].shape)
-        predict_bboxes[..., 0] = torch.sigmoid(center_x) + self.grid_xy[..., 0]  # TODO 去除.data后有没有什么副作用？
+        predict_bboxes[..., 0] = torch.sigmoid(center_x) + self.grid_xy[..., 0]
         predict_bboxes[..., 1] = torch.sigmoid(center_y) + self.grid_xy[..., 1]
         predict_bboxes[..., 2] = torch.exp(width) * self.anchor_wh[..., 0]
         predict_bboxes[..., 3] = torch.exp(height) * self.anchor_wh[..., 1]

@@ -113,11 +113,11 @@ if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
     image_size = 416
-    iou_type = "giou"
-    weight_path = "checkpoints/backup/log-2020-05-08T08-42-50/weights/yolov3_49.pth"
+    iou_type = "iou"
+    weight_path = "checkpoints/backup/log-2020-05-20T00-20-04/weights/yolov3_89.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
-    id_to_name_file = "data/oxfordhand/categories_id_to_name.json"
+    id_to_name_file = "data/hand/categories_id_to_name.json"
     save_path = "data/test_results"
     config = parse_config("config.json")
     detect = Detect(

@@ -1,22 +1,22 @@
 {
     "model_type": "darknet",
     "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
-    "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
+    "pretrained_weight": "checkpoints/official_weights/yolov3.weights",
     "image_size": 416,
 
-    "optimizer": "SGD",
+    "optimizer": "Adam",
     "lr": 1e-3,
     "weight_decay": 0,
     "gradient_accumulation": null,
 
-    "batch_size": 8,
+    "batch_size": 6,
     "start_epoch": 0,
-    "epoch": 100,
+    "epoch": 110,
 
     "lr_scheduler_type": "CosineLR",
     "step_size": 60,
-    "restart_step": 110,
-    "multi_step": [60, 90],
+    "restart_step": 120,
+    "multi_step": [60, 80],
 
     "log_iteration": 10,
     "save_weight_interval": 10,
@@ -24,10 +24,10 @@
     "val_after": 0,
 
     "dataset": "coco",
-    "train_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/trainval",
-    "train_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/trainval",
-    "val_images_root": "/mnt/program/YOLOv3-model-pruning/data/images/test",
-    "val_annotations_root": "/mnt/program/YOLOv3-model-pruning/data/labels/test",
+    "train_images_root": "data/hand/trainval",
+    "train_annotations_root": "data/hand/trainval_txt",
+    "val_images_root": "data/hand/test",
+    "val_annotations_root": "data/hand/test_txt",
     "official": false,
 
     "mean": [0.485, 0.456, 0.406],
@@ -47,7 +47,7 @@
                 "noobject_scale": 100.0,
                 "ignore_thresh": 0.5,
                 "bbox_loss": "GIoU",
-                "iou_type": "giou"
+                "iou_type": "iou"
             }
     },
     "loss_weights": [1.0],
@@ -57,5 +57,8 @@
     "nms_thres": 0.5,
     "test_iou_type": "iou",
 
-    "log_path": "checkpoints/backup"
+    "log_path": "checkpoints/backup",
+
+    "sparsity_train": true,
+    "sparse_scale_rate": 1e-3
 }

@@ -10,7 +10,7 @@ class Solver:
     完成训练、验证、中间结果可视化、模型保存等操作。
     """
     def __init__(self, model, criterion, optimizer, config, data_loader, logger,
-                 valid_data_loader=None, lr_scheduler=None):
+                 valid_data_loader=None, lr_scheduler=None, sparsity_train=None):
         self.config = config
         self.data_loader = data_loader
 
@@ -26,6 +26,8 @@ class Solver:
         self.optimizer = optimizer
         self.config = config
         self.lr_scheduler = lr_scheduler
+
+        self.sparsity_train = sparsity_train
 
     def train_epoch(self, epoch):
         """
@@ -90,6 +92,10 @@ class Solver:
 
     def __update_parameter__(self, loss, iterations):
         loss.backward()
+        # 对尺度因子的稀疏度施加限制
+        if self.sparsity_train is not None:
+            self.sparsity_train.update_bn(self.model.module.module_list)
+
         if self.config["gradient_accumulation"] is not None:
             if iterations % self.config["gradient_accumulation"] == 0:
                 self.optimizer.step()

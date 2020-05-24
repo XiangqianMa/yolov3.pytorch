@@ -21,6 +21,7 @@ class Train(object):
             )
         self.train_dataloader, self.val_dataloader = train_prepare.create_dataloader(config)
         self.logger = Logger(config["log_path"], save_weight_interval=config["save_weight_interval"])
+        sparsity_train = train_prepare.create_sparsity_train(self.model.module.module_defs, config)
         self.solver = Solver(
             self.model, 
             self.criterion, 
@@ -29,7 +30,8 @@ class Train(object):
             self.train_dataloader,
             self.logger,
             valid_data_loader=self.val_dataloader, 
-            lr_scheduler=self.lr_scheduler
+            lr_scheduler=self.lr_scheduler,
+            sparsity_train=sparsity_train
             )
 
         self.start_epoch = config["start_epoch"]

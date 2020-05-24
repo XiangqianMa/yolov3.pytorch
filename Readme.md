@@ -42,3 +42,9 @@ train: 存放训练图片
 train_txt: 存放各个图片所对应的标注文件
 categories_id_to_name.json: 类别id到名称的转换文件
 ```
+## Train
+**下载预训练权重**：
+```shell script
+cd checkpoints/official_weights
+wget https://pjreddie.com/media/files/darknet53.conv.74
+```
