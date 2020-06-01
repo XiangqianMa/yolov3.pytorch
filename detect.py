@@ -30,7 +30,7 @@ class Detect(object):
         image, image_tensor = self.__prepare_image__(image_path, mean, std)
         with torch.no_grad():
             start_time = time.time()
-            predict = self.model(image_tensor)
+            predict, _ = self.model(image_tensor)
             end_time = time.time()
             print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
             start_time = time.time()

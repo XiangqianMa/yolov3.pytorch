@@ -29,11 +29,10 @@ class GetLoss(Module):
         losses = torch.nn.ModuleList()
         for loss_name, param in self.loss_type.items():
             if loss_name == 'yolo_loss':
-                assert ('object_scale' in param.keys() and 'noobject_scale' in param.keys()
-                        and 'ignore_thresh' in param.keys() and 'bbox_loss' in param.keys())
                 losses.append(YOLOLoss(ignore_thres=param['ignore_thresh'], object_scale=param['object_scale'],
                                        noobject_scale=param['noobject_scale'], bbox_loss=param['bbox_loss'],
-                                       iou_type=param['iou_type']))
+                                       iou_type=param['iou_type'], bbox_scale=param['bbox_scale'],
+                                       class_scale=param['class_scale']))
             else:
                 raise NotImplementedError
         return losses

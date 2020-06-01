@@ -55,7 +55,10 @@ class YOLOLayer(nn.Module):
 
         :param feature: 输入特征图
         :param image_size: 原始输入图片的大小
-        :return: 训练时返回 [
+        :return:
+                predict: 所有的预测框，[batch_size, number_of_all_anchors, number_classes+5]
+                         number_of_all_anchors = grid_x * grid_y * number_anchors (每一个cell的anchor数目，默认为3)
+                output [
                     predict_bboxes,  预测框的坐标（坐标相对于图片左上角，宽高转换为实数）
                     classes_probality, 类别概率, 未sigmoid激活
                     anchor_vector, 使用stride归一化后的anchor
@@ -66,9 +69,7 @@ class YOLOLayer(nn.Module):
                     confidence, 目标置信度, 未sigmoid激活
                     number_x_grid, x方向grid的数量
                     number_y_grid, y方向grid的数量
-                    ], 
-                 测试时返回 predict, 所有的预测框，[batch_size, number_of_all_anchors, number_classes+5], 
-                 number_of_all_anchors = grid_x * grid_y * number_anchors (每一个cell的anchor数目，默认为3)
+                    ]
         """
         FloatTensor = torch.cuda.FloatTensor if feature.is_cuda else torch.FloatTensor
         
@@ -104,20 +105,7 @@ class YOLOLayer(nn.Module):
             ], dim=-1,
         )
 
-        if self.training:
-            output = [
-                predict_bboxes, 
-                classes_probality, 
-                self.anchor_vector, 
-                center_x, 
-                center_y, 
-                width, 
-                height, 
-                confidence
-                ]
-        else:
-            output = predict
-        return output
+        return predict, output
 
     def create_grid(self, image_size=416, number_grid=(13, 13), device='cpu', dtype=torch.float32):
         """ 为当前YOLOLayer层创建grid，功能包括：计算每一个grid cell相对于左上角的偏移量，将anchor转换为相对于stride的倍数

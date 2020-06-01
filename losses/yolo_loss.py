@@ -78,6 +78,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss
     object_mask[sample_index, best_n, ground_j, ground_i] = 1
     noobject_mask[sample_index, best_n, ground_j, ground_i] = 0
 
+    # 同时，大于ignore_thres的anchor也被标记为匹配
     for index, anchor_ious in enumerate(ious.t()):
         noobject_mask[sample_index[index], anchor_ious > ignore_thres, ground_j[index], ground_i[index]] = 0
 
@@ -108,7 +109,8 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss
 class YOLOLoss(nn.Module):
     """计算损失，并打印统计参数
     """
-    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw', iou_type='iou'):
+    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw', iou_type='iou', \
+                bbox_scale=1.0, class_scale=1.0):
         """
         
         Args:
@@ -124,6 +126,8 @@ class YOLOLoss(nn.Module):
 
         self.object_scale = object_scale
         self.noobject_scale = noobject_scale
+        self.bbox_scale = bbox_scale
+        self.class_scale = class_scale
         self.ignore_thres = ignore_thres
         self.metric = []
 
@@ -154,9 +158,9 @@ class YOLOLoss(nn.Module):
             )
 
             loss_bbox = 0
+            box_loss_scale = 2.0 - raw_target_w[object_mask] * raw_target_h[object_mask]
             if self.bbox_loss == 'raw':
                 # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
-                box_loss_scale = 2.0 - raw_target_w[object_mask] * raw_target_h[object_mask]
                 loss_x = (box_loss_scale * self.bce_loss(center_x[object_mask], target_x[object_mask])).mean()
                 loss_y = (box_loss_scale * self.bce_loss(center_y[object_mask], target_y[object_mask])).mean()
                 loss_w = (0.5 * box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
@@ -171,7 +175,7 @@ class YOLOLoss(nn.Module):
                                                          width[object_mask], height[object_mask], grid_x, grid_y)
                 target_bboxes_converted = bbox_transfer(target_x[object_mask], target_y[object_mask],
                                                         target_w[object_mask], target_h[object_mask], grid_x, grid_y)
-                loss_bbox = self.giou_loss(predict_bboxes_converted, target_bboxes_converted).mean()
+                loss_bbox = (box_loss_scale * self.giou_loss(predict_bboxes_converted, target_bboxes_converted)).mean()
 
             # 置信度损失
             loss_conf_object = self.bce_loss(confidence[object_mask], target_confidence[object_mask])
@@ -180,7 +184,8 @@ class YOLOLoss(nn.Module):
 
             # 类别损失
             loss_cls = self.bce_loss(classes_probablity[object_mask], target_classes[object_mask]).mean()
-            current_total_loss = loss_bbox + loss_conf + loss_cls
+
+            current_total_loss = self.bbox_scale * loss_bbox + loss_conf + self.class_scale * loss_cls
 
             loss += current_total_loss
         return loss

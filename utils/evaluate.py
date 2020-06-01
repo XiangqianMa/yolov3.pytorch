@@ -133,13 +133,16 @@ def get_batch_statistics(outputs, targets, iou_threshold, iou_type="iou"):
     return batch_metrics
 
 
-def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size, iou_type='iou'):
+def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size, iou_type='iou', criterion=None):
     model.eval()
     labels = []
     sample_metrics = []  # List of tuples (TP, confs, pred)
-    for batch_i, (_, imgs, targets) in enumerate(tqdm.tqdm(dataloader, desc="Detecting objects")):
+    epoch_loss = 0
+    tbar = tqdm.tqdm(dataloader)
+    for batch_i, (_, imgs, targets) in enumerate(tbar):
 
         imgs = imgs.cuda()
+        targets_raw = targets.cuda()
         # Extract labels
         labels += targets[:, 1].tolist()
         # Rescale target
@@ -147,13 +150,19 @@ def evaluate(model, dataloader, iou_thres, conf_thres, nms_thres, img_size, iou_
         targets[:, 2:] *= img_size
 
         with torch.no_grad():
-            outputs = model(imgs)
+            predicts, outputs = model(imgs)
+            if criterion is not None:
+                loss = criterion(outputs, targets_raw)
+                epoch_loss += loss.item()
             outputs = non_max_suppression(outputs.cpu(), conf_thres=conf_thres, nms_thres=nms_thres, iou_type=iou_type)
 
         sample_metrics += get_batch_statistics(outputs, targets, iou_threshold=iou_thres, iou_type=iou_type)
+        descript = "Validate Loss: %.5f" % loss.item()
+        tbar.set_description(desc=descript)
 
     # Concatenate sample statistics
     true_positives, pred_scores, pred_labels = [np.concatenate(x, 0) for x in list(zip(*sample_metrics))]
     precision, recall, AP, f1, ap_class = ap_per_class(true_positives, pred_scores, pred_labels, labels)
+    epoch_loss = epoch_loss / len(dataloader)
 
-    return precision, recall, AP, f1, ap_class
+    return precision, recall, AP, f1, ap_class, epoch_loss

@@ -58,6 +58,6 @@ if __name__ == "__main__":
     annotations_root = "/mnt/program/YOLOv3-model-pruning/data/labels/test"
 
     test = Test(model_type, model_cfg, image_size, weight_path, images_root, annotations_root, iou_type=iou_type)
-    precision, recall, AP, f1, ap_class = test()
+    precision, recall, AP, f1, ap_class, _ = test()
     print("Precision: %.4f \n Recall: %.4f \n mAP: %.4f \n f1: %.4f" % (
         precision.mean(), recall.mean(), AP.mean(), f1.mean()))

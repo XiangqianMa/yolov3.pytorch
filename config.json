@@ -4,8 +4,8 @@
     "pretrained_weight": "checkpoints/official_weights/yolov3.weights",
     "image_size": 416,
 
-    "optimizer": "Adam",
-    "lr": 1e-3,
+    "optimizer": "SGD",
+    "lr": 1e-5,
     "weight_decay": 0,
     "gradient_accumulation": null,
 
@@ -13,15 +13,15 @@
     "start_epoch": 0,
     "epoch": 110,
 
-    "lr_scheduler_type": "CosineLR",
+    "lr_scheduler_type": "MultiStepLR",
     "step_size": 60,
     "restart_step": 120,
-    "multi_step": [60, 80],
+    "multi_step": [70, 90],
 
     "log_iteration": 10,
     "save_weight_interval": 10,
     "val_interval": 5,
-    "val_after": 0,
+    "val_after": 20,
 
     "dataset": "coco",
     "train_images_root": "data/hand/trainval",
@@ -43,9 +43,11 @@
     {
         "yolo_loss":
             {
+                "bbox_scale": 1.0,
+                "class_scale": 1.0,
                 "object_scale": 1.0,
-                "noobject_scale": 100.0,
-                "ignore_thresh": 0.5,
+                "noobject_scale": 1.0,
+                "ignore_thresh": 0.7,
                 "bbox_loss": "GIoU",
                 "iou_type": "iou"
             }
@@ -53,12 +55,12 @@
     "loss_weights": [1.0],
 
     "iou_thres": 0.5,
-    "conf_thres": 0.01,
-    "nms_thres": 0.5,
+    "conf_thres": 0.001,
+    "nms_thres": 0.6,
     "test_iou_type": "iou",
 
     "log_path": "checkpoints/backup",
 
-    "sparsity_train": true,
+    "sparsity_train": false,
     "sparse_scale_rate": 1e-3
 }
