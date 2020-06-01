@@ -109,7 +109,7 @@ def build_targets(pred_boxes, pred_cls, target, anchors, ignore_thres, bbox_loss
 class YOLOLoss(nn.Module):
     """计算损失，并打印统计参数
     """
-    def __init__(self, ignore_thres=0.7, object_scale=1, noobject_scale=100, bbox_loss='raw', iou_type='iou', \
+    def __init__(self, ignore_thres=0.7, object_scale=100, noobject_scale=1, bbox_loss='raw', iou_type='iou', \
                 bbox_scale=1.0, class_scale=1.0):
         """
         

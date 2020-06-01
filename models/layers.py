@@ -105,7 +105,21 @@ class YOLOLayer(nn.Module):
             ], dim=-1,
         )
 
-        return predict, output
+        if self.training:
+            output = [
+                predict_bboxes,
+                classes_probality,
+                self.anchor_vector,
+                center_x,
+                center_y,
+                width,
+                height,
+                confidence
+            ]
+        else:
+            output = predict
+
+        return output
 
     def create_grid(self, image_size=416, number_grid=(13, 13), device='cpu', dtype=torch.float32):
         """ 为当前YOLOLayer层创建grid，功能包括：计算每一个grid cell相对于左上角的偏移量，将anchor转换为相对于stride的倍数

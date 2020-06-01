@@ -45,7 +45,7 @@ class Solver:
                 continue
             data, target = data.cuda(), target.cuda()
 
-            _, output = self.model(data)
+            output = self.model(data)
             loss = self.criterion(output, target)
             self.__update_parameter__(loss, iter_index)
 
@@ -70,19 +70,17 @@ class Solver:
         Args:
             epoch: 当前epoch的index
         """
-        precision, recall, AP, f1, ap_class, valid_loss = evaluate(
+        precision, recall, AP, f1, ap_class = evaluate(
             self.model,
             self.valid_data_loader,
             self.config["iou_thres"],
             self.config["conf_thres"],
             self.config["nms_thres"],
             self.config["image_size"],
-            self.config["test_iou_type"],
-            criterion=self.criterion
+            self.config["test_iou_type"]
         )
 
         evaluation_metrics = [
-            ("Val_loss", valid_loss),
             ("val_precision", precision.mean()),
             ("val_recall", recall.mean()),
             ("val_mAP", AP.mean()),
