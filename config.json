@@ -1,10 +1,10 @@
 {
     "model_type": "darknet",
     "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
-    "pretrained_weight": "checkpoints/official_weights/yolov3.weights",
+    "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
     "image_size": 416,
 
-    "optimizer": "SGD",
+    "optimizer": "Adam",
     "lr": 1e-3,
     "weight_decay": 0,
     "gradient_accumulation": null,
@@ -19,7 +19,7 @@
     "multi_step": [70, 90],
 
     "log_iteration": 10,
-    "save_weight_interval": 10,
+    "save_weight_interval": 5,
     "val_interval": 5,
     "val_after": 0,
 
@@ -48,15 +48,15 @@
                 "object_scale": 1.0,
                 "noobject_scale": 100.0,
                 "ignore_thresh": 0.7,
-                "bbox_loss": "GIoU",
+                "bbox_loss": "raw",
                 "iou_type": "iou"
             }
     },
     "loss_weights": [1.0],
 
     "iou_thres": 0.5,
-    "conf_thres": 0.001,
-    "nms_thres": 0.6,
+    "conf_thres": 0.5,
+    "nms_thres": 0.5,
     "test_iou_type": "iou",
 
     "log_path": "checkpoints/backup",

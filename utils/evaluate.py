@@ -33,9 +33,7 @@ def ap_per_class(tp, conf, pred_cls, target_cls):
         n_p = i.sum()  # Number of predicted objects
 
         if n_p == 0 and n_gt == 0:
-            ap.append(1)
-            r.append(1)
-            p.append(1)
+            continue
         elif n_p == 0 or n_gt == 0:
             ap.append(0)
             r.append(0)
