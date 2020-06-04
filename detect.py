@@ -1,6 +1,6 @@
 import numpy as np
 import os
-import time
+import time, timeit
 import json
 import torch
 import torchvision.transforms as T
@@ -29,13 +29,16 @@ class Detect(object):
         print('~' * 10 + image_path.split('/')[-1] + '~' * 10)
         image, image_tensor = self.__prepare_image__(image_path, mean, std)
         with torch.no_grad():
-            start_time = time.time()
+            torch.cuda.synchronize()
+            start_time = timeit.default_timer()
             predict = self.model(image_tensor)
-            end_time = time.time()
+            torch.cuda.synchronize()
+            end_time = timeit.default_timer()
             print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
-            start_time = time.time()
-            predict = non_max_suppression(predict, conf_thres, nms_thres, iou_type=self.iou_type)[0]
-            end_time = time.time()
+            start_time = timeit.default_timer()
+            predict = non_max_suppression(predict, conf_thres, nms_thres, iou_type=self.iou_type, 
+                                          width=self.image_size, height=self.image_size)[0]
+            end_time = timeit.default_timer()
             print("@ NMS took %d ms." % ((end_time - start_time) * 1000))
 
         if predict is not None:
@@ -111,13 +114,13 @@ class Detect(object):
 
 if __name__ == "__main__":
     model_type = "darknet"
-    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
-    image_size = 416
+    model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
+    image_size = 480
     iou_type = "iou"
-    weight_path = "checkpoints/backup/log-2020-06-01T23-52-23/weights/yolov3_79.pth"
+    weight_path = "checkpoints/backup/yolov3_189.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
-    id_to_name_file = "data/coco/categories_id_to_name.json"
+    id_to_name_file = "data/voc/categories_id_to_name.json"
     save_path = "data/test_results"
     config = parse_config("config.json")
     detect = Detect(
@@ -131,13 +134,5 @@ if __name__ == "__main__":
     )
 
     detect.detect_multi_images(image_root, config["mean"], config["std"], 0.5, 0.5)
-
-    # detect.detect_single_image(
-    #     image_path,
-    #     config["mean"],
-    #     config["std"],
-    #     0.5,
-    #     0.5
-    # )
     pass
 

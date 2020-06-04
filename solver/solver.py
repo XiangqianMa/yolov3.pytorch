@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import tqdm
 from torchvision.utils import make_grid
-from utils.evaluate import evaluate
+from utils.evaluate_coco import evaluate
 
 
 class Solver:

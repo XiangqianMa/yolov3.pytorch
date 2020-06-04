@@ -75,7 +75,7 @@ def corner_to_upleft(boxes):
     return boxes_convert
 
 
-def xywh2xyxy(x):
+def xywh2xyxy(x, width=416, height=416):
     """
     将中心坐标形式的框转换为对角坐标的形式
     Args:
@@ -85,10 +85,10 @@ def xywh2xyxy(x):
         y: 对角坐标形式，tensor, [batch_size, boxes_number, 4]
     """
     y = x.new_zeros(x.shape)
-    y[..., 0] = x[..., 0] - x[..., 2] / 2.0
-    y[..., 1] = x[..., 1] - x[..., 3] / 2.0
-    y[..., 2] = x[..., 0] + x[..., 2] / 2.0
-    y[..., 3] = x[..., 1] + x[..., 3] / 2.0
+    y[..., 0] = torch.clamp(x[..., 0] - x[..., 2] / 2.0, min=0)
+    y[..., 1] = torch.clamp(x[..., 1] - x[..., 3] / 2.0, min=0)
+    y[..., 2] = torch.clamp(x[..., 0] + x[..., 2] / 2.0, max=width)
+    y[..., 3] = torch.clamp(x[..., 1] + x[..., 3] / 2.0, max=height)
     return y
 
 

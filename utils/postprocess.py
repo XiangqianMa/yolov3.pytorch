@@ -4,7 +4,7 @@ from utils.bbox_convert import xywh2xyxy
 from utils.calculate_iou import bbox_iou, bbox_giou
 
 
-def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5, iou_type="iou"):
+def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5, iou_type="iou", width=416, height=416):
     """分类别对预测框进行NMS处理，在去除重复的目标框时采取的方法是将大于nms_thres的目标框加权到该类别得分最高的目标框的方式。
        权重为各目标框存在目标的置信度
 
@@ -17,7 +17,7 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5, iou_type="iou
         output: list, 经过NMS处理后剩余的目标框，list中的每一个tensor表示一张图片的目标框，[[boxes_number, 4 + 1 + 2], ...]，
                 元素代表的含义依次为：目标框的（x1, y1, x2, y2）坐标、存在目标的置信度、类别分数、类别编号
     """
-    prediction[..., :4] = xywh2xyxy(prediction[..., :4])  # 将边界框从中心坐标的形式转换为对角坐标
+    prediction[..., :4] = xywh2xyxy(prediction[..., :4], width=width, height=height)  # 将边界框从中心坐标的形式转换为对角坐标
     output = [None for _ in range(len(prediction))]
     # 遍历每张图片
     for image_index, image_prediction in enumerate(prediction):

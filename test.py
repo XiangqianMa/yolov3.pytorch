@@ -8,7 +8,7 @@ from PIL import Image
 from torch.utils.data import DataLoader
 from models.get_model import GetModel
 from datasets.coco_dataset import COCODataset
-from utils.evaluate import evaluate
+from utils.evaluate_coco import evaluate
 
 
 class Test(object):

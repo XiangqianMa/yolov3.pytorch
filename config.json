@@ -46,8 +46,8 @@
                 "bbox_scale": 1.0,
                 "class_scale": 1.0,
                 "object_scale": 1.0,
-                "noobject_scale": 100.0,
-                "ignore_thresh": 0.7,
+                "noobject_scale": 1.0,
+                "ignore_thresh": 0.3,
                 "bbox_loss": "raw",
                 "iou_type": "iou"
             }

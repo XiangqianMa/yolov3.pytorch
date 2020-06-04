@@ -17,8 +17,13 @@ def random_colors(class_number):
 
 
 def visualize_bbox(img, bbox, class_id, class_idx_to_name, color=(255, 0, 0), text_color=(255, 255, 255), thickness=2):
+    height, width = img.shape[0], img.shape[1]
     x_min, y_min, w, h = bbox
     x_min, x_max, y_min, y_max = int(x_min), int(x_min + w), int(y_min), int(y_min + h)
+    x_min = x_min + 5 if x_min <= 0 else x_min
+    y_min = y_min + 5 if y_min <= 0 else y_min
+    x_max = x_max - 5 if x_max >= width else x_max
+    y_max = y_max - 5 if y_max >= height else y_max
     cv2.rectangle(img, (x_min, y_min), (x_max, y_max), color=color, thickness=thickness)
     class_name = class_idx_to_name[str(class_id)]
     ((text_width, text_height), _) = cv2.getTextSize(class_name, cv2.FONT_HERSHEY_SIMPLEX, 0.35, 1)    
