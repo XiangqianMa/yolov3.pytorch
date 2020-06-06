@@ -13,7 +13,9 @@ from albumentations import (
     HorizontalFlip,
     VerticalFlip,
     Resize,
-    Compose
+    Compose,
+    HueSaturationValue,
+    ShiftScaleRotate
 )
 
 from utils.bbox_convert import center_to_upleft, upleft_to_center
@@ -83,14 +85,17 @@ class DataAugment(object):
         for aug_name, aug_param in self.aug.items():
             current_augment = []
             if aug_name == 'Resize':
-                assert ('height' in aug_param and 'width' in aug_param and 'always_apply' in aug_param)
                 current_augment = Resize(height=aug_param['height'], width=aug_param['width'], always_apply=aug_param['always_apply'])
             elif aug_name == 'HorizontalFlip':
-                assert ('p' in aug_param)
                 current_augment = HorizontalFlip(p=aug_param['p'])
             elif aug_name == 'VerticalFlip':
-                assert ('p' in aug_param)
                 current_augment = VerticalFlip(p=aug_param['p'])
+            elif aug_name == 'HueSaturationValue':
+                current_augment = HueSaturationValue(hue_shift_limit=aug_param['hue_shift_limit'], sat_shift_limit=aug_param['sat_shift_limit'], 
+                                                     val_shift_limit=aug_param['val_shift_limit'], p=aug_param['p'])
+            elif aug_name == 'ShiftScaleRotate':
+                current_augment = ShiftScaleRotate(shift_limit=aug_param['shift_limit'], scale_limit=aug_param['scale_limit'], 
+                                                   rotate_limit=aug_param['rotate_limit'], p=aug_param['p'])
             augment.append(current_augment)
         
         return Compose(augment, bbox_params=BboxParams(format=self.dataset_format, min_area=self.min_area,
@@ -277,7 +282,6 @@ if __name__ == "__main__":
             bboxes[i] = bbox
             category_id[i] = int(category_id[i])
 
-        print(category_id)
         annotations = {
             'image': image,
             'bboxes': bboxes,
@@ -288,5 +292,7 @@ if __name__ == "__main__":
             categories_id_to_name = json.load(f)
 
         image = visualize(annotations, categories_id_to_name, show=False)
-        cv2.imwrite("masaic_%d.jpg" % sample_index, image)
+        cv2.imshow("mosaic", image)
+        cv2.waitKey(0)
+        # cv2.imwrite("masaic_%d.jpg" % sample_index, image)
     pass
