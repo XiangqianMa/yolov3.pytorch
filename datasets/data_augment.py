@@ -38,12 +38,12 @@ class DataAugment(object):
 
         Args:
             image: 样本图片, Image格式
-            bboxes: 对应的目标框, 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
-            category_id: bboxes中各个目标框对应的类别id, [0, 1, ...]
+            bboxes: list, 对应的目标框, 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
+            category_id: list, bboxes中各个目标框对应的类别id, [0, 1, ...]
         Return:
             image_augmented: 增强后的图片, Image格式
-            bboxes_augmented: 增强后的目标框， 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
-            category_id_augmented: 各个目标框对应的类别id， [0, 1, ...]
+            bboxes_augmented: list, 增强后的目标框， 均为相对于图片宽度和高度的比例形式,[[center_x, center_y, w, h], ...]
+            category_id_augmented: list, 各个目标框对应的类别id， [0, 1, ...]
         """
         image_width = image.size[0]
         image_height = image.size[1]
@@ -63,10 +63,10 @@ class DataAugment(object):
             'bboxes': bboxes_converted,
             'category_id': category_id_converted
         }
-        # with open('data/coco/categories_id_to_name.json', 'r') as f:
-        #     categories_id_to_name = json.load(f)
+        with open('data/voc/categories_id_to_name.json', 'r') as f:
+            categories_id_to_name = json.load(f)
         augmented = self.augmentation(**annotations)
-        # visualize(augmented, categories_id_to_name)
+        visualize(augmented, categories_id_to_name)
         image_augmented = Image.fromarray(augmented['image'])
         bboxes_augmented = augmented['bboxes']
         for bbox_index, bbox_agumented in enumerate(bboxes_augmented):
@@ -113,7 +113,7 @@ def pad_to_square(image, boxes, fill=0):
 
     Returns:
         image: PIL.Image
-        boxes: List
+        boxes: list
     """
     w, h = image.size
     size_diff = np.abs(w - h)
@@ -231,22 +231,23 @@ class MosaicAugment(object):
             labels: 目标框标注，labels[:, 0]为类标，labels[:, 1:]为目标框
         Returns:
             image: PIL.Image格式 RGB
-            category_id: 各个bboxes对应的类别id
-            converted_bboxes: yolo格式的标注框[center_x, center_y, w, h]
+            category_id: list, 各个bboxes对应的类别id
+            converted_bboxes: list, yolo格式的标注框[center_x, center_y, w, h]
         """
         bboxes = labels[:, 1:]
-        category_id = labels[:, 0]
+        category_id = labels[:, 0].astype(np.int32)
         converted_bboxes = np.zeros_like(bboxes)
         converted_bboxes[:, 0] = bboxes[:, 0] + (bboxes[:, 2] - bboxes[:, 0]) / 2
         converted_bboxes[:, 1] = bboxes[:, 1] + (bboxes[:, 3] - bboxes[:, 1]) / 2
         converted_bboxes[:, 2] = bboxes[:, 2] - bboxes[:, 0]
         converted_bboxes[:, 3] = bboxes[:, 3] - bboxes[:, 1]
-        h, w, c = image.shape
+        h, _, _ = image.shape
         converted_bboxes = converted_bboxes / h
+        converted_bboxes = np.clip(converted_bboxes, 0.0, 1.0)
 
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         image = Image.fromarray(image)
-        return image, category_id, converted_bboxes
+        return image, category_id.tolist(), converted_bboxes.tolist()
 
     def load_image(self, index):
         # loads 1 image from dataset

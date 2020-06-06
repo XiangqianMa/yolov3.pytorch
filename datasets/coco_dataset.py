@@ -131,8 +131,8 @@ class COCODataset(Dataset):
         Args:
             txt_path: txt文件的路径
         Return:
-            categories_id: 各个标记框对应的类别, [0, 1, 2, ...]
-            bboxes: 标记框 [[center_x, center_y, width, height], ...]
+            categories_id: list, 各个标记框对应的类别, [0, 1, 2, ...]
+            bboxes: list, 标记框 [[center_x, center_y, width, height], ...]
         """
         categories_id = []
         bboxes = []

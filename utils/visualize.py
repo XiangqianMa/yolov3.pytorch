@@ -43,5 +43,5 @@ def visualize(annotations, category_id_to_name, show=True):
     if show:
         plt.figure(figsize=(12, 12))
         plt.imshow(img)
-        plt.close()
+        plt.show()
     return img

@@ -5,11 +5,11 @@
     "image_size": 416,
 
     "optimizer": "SGD",
-    "lr": 1e-3,
-    "weight_decay": 0,
+    "lr": 1e-4,
+    "weight_decay": 4e-5,
     "gradient_accumulation": null,
 
-    "batch_size": 12,
+    "batch_size": 6,
     "start_epoch": 0,
     "epoch": 200,
 
@@ -33,9 +33,10 @@
     "mean": [0.485, 0.456, 0.406],
     "std": [0.229, 0.224, 0.225],
     "normalize": false,
-    "multi_scale": true,
-    "mosaic": false,
+    "multi_scale": false,
+    "mosaic": true,
     "dataset_format": "coco",
+    "augment": false,
     "train_augmentation": 
     {
         "ShiftScaleRotate":
@@ -58,7 +59,7 @@
         },
         "VerticalFlip":
         {
-            "p": 0.5
+            "p": 0.4
         }
     },
     "val_augmentation": null,

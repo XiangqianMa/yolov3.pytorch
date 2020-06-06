@@ -16,6 +16,7 @@ class GetDataLoader(object):
         mean=(0.485, 0.456, 0.406),
         std=(0.229, 0.224, 0.225),
         dataset_format='coco',
+        augment=False,
         train_augmentation=None,
         val_augmentation=None,
         dataset="coco",
@@ -25,6 +26,7 @@ class GetDataLoader(object):
     ):
         self.dataset = dataset
 
+        self.augment = augment
         self.train_images_root = train_images_root
         self.train_annotations_root = train_annotations_root
         self.train_augmentation = train_augmentation
@@ -58,10 +60,10 @@ class GetDataLoader(object):
         return train_dataloader, val_dataloader
 
     def __get_data_augment__(self, augmentation):
-        augment = None
-        if augmentation is not None:
-            augment = DataAugment(aug=augmentation, dataset_format=self.dataset_format)
-        return augment
+        data_augment = None
+        if self.augment and augmentation is not None:
+            data_augment = DataAugment(aug=augmentation, dataset_format=self.dataset_format)
+        return data_augment
     
     def __get_dataset__(self, images_root, annotations_root, augment, augment_flag=True, multi_scale=True, mosaic=False):
         dataset = None

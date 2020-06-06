@@ -48,3 +48,5 @@ categories_id_to_name.json: 类别id到名称的转换文件
 cd checkpoints/official_weights
 wget https://pjreddie.com/media/files/darknet53.conv.74
 ```
+## Attention
+* 在使用Mosaic和训练集数据增强时，如果使用SGD优化器，学习率最高只能是1e-4，否则会导致训练不稳定；但如果使用Adam，则学习率可以调整为1e-3。

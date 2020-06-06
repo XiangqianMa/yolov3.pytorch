@@ -29,7 +29,7 @@ class Prepare(object):
         return model
 
     def create_dataloader(self, config):
-        print("Creating dataloader.")
+        print("@ Creating dataloader.")
         my_get_dataloader = GetDataLoader(
             config["train_images_root"],
             config["train_annotations_root"],
@@ -39,6 +39,7 @@ class Prepare(object):
             config["mean"],
             config["std"],
             config["dataset_format"],
+            config["augment"],
             config["train_augmentation"],
             config["val_augmentation"],
             config["dataset"],
