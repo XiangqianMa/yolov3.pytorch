@@ -1,22 +1,22 @@
 {
     "model_type": "darknet",
-    "model_cfg": "cfg/model_cfg/yolov3-hand.cfg",
+    "model_cfg": "cfg/model_cfg/yolov3-voc.cfg",
     "pretrained_weight": "checkpoints/official_weights/darknet53.conv.74",
     "image_size": 416,
 
-    "optimizer": "Adam",
+    "optimizer": "SGD",
     "lr": 1e-3,
     "weight_decay": 0,
     "gradient_accumulation": null,
 
-    "batch_size": 6,
+    "batch_size": 12,
     "start_epoch": 0,
-    "epoch": 110,
+    "epoch": 200,
 
     "lr_scheduler_type": "MultiStepLR",
     "step_size": 60,
     "restart_step": 120,
-    "multi_step": [70, 90],
+    "multi_step": [150, 170],
 
     "log_iteration": 10,
     "save_weight_interval": 5,
@@ -24,10 +24,10 @@
     "val_after": 0,
 
     "dataset": "coco",
-    "train_images_root": "data/hand/trainval",
-    "train_annotations_root": "data/hand/trainval_txt",
-    "val_images_root": "data/hand/test",
-    "val_annotations_root": "data/hand/test_txt",
+    "train_images_root": "data/voc/train",
+    "train_annotations_root": "data/voc/train_txt",
+    "val_images_root": "data/voc/test",
+    "val_annotations_root": "data/voc/test_txt",
     "official": false,
 
     "mean": [0.485, 0.456, 0.406],
