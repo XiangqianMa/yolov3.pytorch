@@ -46,11 +46,11 @@ def center_to_upleft(center_x_ratio, center_y_ratio, width_ratio, height_ratio, 
         width: 宽度
         height: 高度
     """
-    center_x = center_x_ratio * image_width
-    center_y = center_y_ratio * image_height
+    center_x = int(center_x_ratio * image_width)
+    center_y = int(center_y_ratio * image_height)
 
-    width = width_ratio * image_width
-    height = height_ratio * image_height
+    width = int(width_ratio * image_width)
+    height = int(height_ratio * image_height)
 
     left_x = int(center_x - width / 2)
     left_y = int(center_y - height / 2)

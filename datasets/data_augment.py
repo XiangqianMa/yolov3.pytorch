@@ -63,10 +63,10 @@ class DataAugment(object):
             'bboxes': bboxes_converted,
             'category_id': category_id_converted
         }
-        with open('data/voc/categories_id_to_name.json', 'r') as f:
-            categories_id_to_name = json.load(f)
+        # with open('data/voc/categories_id_to_name.json', 'r') as f:
+        #     categories_id_to_name = json.load(f)
         augmented = self.augmentation(**annotations)
-        visualize(augmented, categories_id_to_name)
+        # visualize(augmented, categories_id_to_name)
         image_augmented = Image.fromarray(augmented['image'])
         bboxes_augmented = augmented['bboxes']
         for bbox_index, bbox_agumented in enumerate(bboxes_augmented):
