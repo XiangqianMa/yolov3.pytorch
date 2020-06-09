@@ -59,7 +59,7 @@ class COCODataset(Dataset):
         """
         image_path = self.images_list[index]
         annotation_path = os.path.join(self.annotations_root, image_path.split('/')[-1].replace('jpg', 'txt'))
-        if self.mosaic and random.random() < 0.5:
+        if self.mosaic:
             image, labels = self.mosaic_augment.load_mosaic(index)
             image, categories_id, bboxes = self.mosaic_augment.label_to_yolo_format(image, labels)
         else:
@@ -101,7 +101,6 @@ class COCODataset(Dataset):
         # 过滤不存在boxes的样本
         for sample_index, categories_id_bboxes in enumerate(targets):
             if categories_id_bboxes is None:
-                print("None")
                 continue
             categories_id_bboxes[:, 0] = sample_index
         targets = [categories_id_bboxes for categories_id_bboxes in targets if categories_id_bboxes is not None]

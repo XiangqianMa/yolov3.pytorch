@@ -6,6 +6,7 @@ import random
 import cv2
 import os
 import json
+import math
 from PIL import Image
 from torchvision.transforms import Pad
 from albumentations import (
@@ -63,10 +64,10 @@ class DataAugment(object):
             'bboxes': bboxes_converted,
             'category_id': category_id_converted
         }
-        # with open('data/voc/categories_id_to_name.json', 'r') as f:
-        #     categories_id_to_name = json.load(f)
+        with open('data/voc/categories_id_to_name.json', 'r') as f:
+            categories_id_to_name = json.load(f)
         augmented = self.augmentation(**annotations)
-        # visualize(augmented, categories_id_to_name)
+        visualize(augmented, categories_id_to_name)
         image_augmented = Image.fromarray(augmented['image'])
         bboxes_augmented = augmented['bboxes']
         for bbox_index, bbox_agumented in enumerate(bboxes_augmented):
@@ -196,31 +197,22 @@ class MosaicAugment(object):
                 with open(label_path, 'r') as f:
                     x = np.array([x.split() for x in f.read().splitlines()], dtype=np.float32)
 
+                labels = x.copy()
                 if x.size > 0:
                     # Normalized xywh to pixel xyxy format
-                    labels = x.copy()
                     labels[:, 1] = w * (x[:, 1] - x[:, 3] / 2) + padw
                     labels[:, 2] = h * (x[:, 2] - x[:, 4] / 2) + padh
                     labels[:, 3] = w * (x[:, 1] + x[:, 3] / 2) + padw
                     labels[:, 4] = h * (x[:, 2] + x[:, 4] / 2) + padh
 
-                    labels4.append(labels)
-        labels4 = np.concatenate(labels4, 0)
+                labels4.append(labels)
+        
+        if len(labels4):
+            labels4 = np.concatenate(labels4, 0)
+            np.clip(labels4[:, 1:], 0, 2 * s, out=labels4[:, 1:])
 
-        # Center crop
-        a = s // 2
-        img4 = img4[a:a + s, a:a + s]
-        labels4[:, 1:] -= a
-        labels4[labels4 < 0] = 0
-        labels4[labels4 > s] = s
+        img4, labels4 = random_affine(img4, labels4, degrees=0, translate=0, scale=0, shear=0, border=-s // 2)
 
-        #  去除无效的目标框
-        bboxes_w = labels4[:, 3] - labels4[:, 1]
-        bboxes_h = labels4[:, 4] - labels4[:, 2]
-        bboxes_w_invalid = bboxes_w < 10
-        bboxes_h_invalid = bboxes_h < 10
-        invalid_index = bboxes_w_invalid + bboxes_h_invalid
-        labels4 = labels4[~invalid_index]
         return img4, labels4
 
     def label_to_yolo_format(self, image, labels):
@@ -262,11 +254,80 @@ class MosaicAugment(object):
         return img
 
 
+def random_affine(img, targets=(), degrees=10, translate=.1, scale=.1, shear=10, border=0):
+    # torchvision.transforms.RandomAffine(degrees=(-10, 10), translate=(.1, .1), scale=(.9, 1.1), shear=(-10, 10))
+    # https://medium.com/uruvideo/dataset-augmentation-with-random-homographies-a8f4b44830d4
+    # targets = [cls, xyxy]
+
+    height = img.shape[0] + border * 2
+    width = img.shape[1] + border * 2
+
+    # Rotation and Scale
+    R = np.eye(3)
+    a = random.uniform(-degrees, degrees)
+    # a += random.choice([-180, -90, 0, 90])  # add 90deg rotations to small rotations
+    s = random.uniform(1 - scale, 1 + scale)
+    # s = 2 ** random.uniform(-scale, scale)
+    R[:2] = cv2.getRotationMatrix2D(angle=a, center=(img.shape[1] / 2, img.shape[0] / 2), scale=s)
+
+    # Translation
+    T = np.eye(3)
+    T[0, 2] = random.uniform(-translate, translate) * img.shape[0] + border  # x translation (pixels)
+    T[1, 2] = random.uniform(-translate, translate) * img.shape[1] + border  # y translation (pixels)
+
+    # Shear
+    S = np.eye(3)
+    S[0, 1] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # x shear (deg)
+    S[1, 0] = math.tan(random.uniform(-shear, shear) * math.pi / 180)  # y shear (deg)
+
+    # Combined rotation matrix
+    M = S @ T @ R  # ORDER IS IMPORTANT HERE!!
+    if (border != 0) or (M != np.eye(3)).any():  # image changed
+        img = cv2.warpAffine(img, M[:2], dsize=(width, height), flags=cv2.INTER_LINEAR, borderValue=(114, 114, 114))
+
+    # Transform label coordinates
+    n = len(targets)
+    if n:
+        # warp points
+        xy = np.ones((n * 4, 3))
+        xy[:, :2] = targets[:, [1, 2, 3, 4, 1, 4, 3, 2]].reshape(n * 4, 2)  # x1y1, x2y2, x1y2, x2y1
+        xy = (xy @ M.T)[:, :2].reshape(n, 8)
+
+        # create new boxes
+        x = xy[:, [0, 2, 4, 6]]
+        y = xy[:, [1, 3, 5, 7]]
+        xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
+
+        # # apply angle-based reduction of bounding boxes
+        # radians = a * math.pi / 180
+        # reduction = max(abs(math.sin(radians)), abs(math.cos(radians))) ** 0.5
+        # x = (xy[:, 2] + xy[:, 0]) / 2
+        # y = (xy[:, 3] + xy[:, 1]) / 2
+        # w = (xy[:, 2] - xy[:, 0]) * reduction
+        # h = (xy[:, 3] - xy[:, 1]) * reduction
+        # xy = np.concatenate((x - w / 2, y - h / 2, x + w / 2, y + h / 2)).reshape(4, n).T
+
+        # reject warped points outside of image
+        xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
+        xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+        w = xy[:, 2] - xy[:, 0]
+        h = xy[:, 3] - xy[:, 1]
+        area = w * h
+        area0 = (targets[:, 3] - targets[:, 1]) * (targets[:, 4] - targets[:, 2])
+        ar = np.maximum(w / (h + 1e-16), h / (w + 1e-16))  # aspect ratio
+        i = (w > 4) & (h > 4) & (area / (area0 * s + 1e-16) > 0.2) & (ar < 10)
+
+        targets = targets[i]
+        targets[:, 1:5] = xy[i]
+
+    return img, targets
+
+
 if __name__ == "__main__":
     images_dir = "data/voc/train"
     labels_dir = "data/voc/train_txt"
     files = os.listdir(images_dir)
-    for sample_index in range(10):
+    for sample_index in range(30):
         selected = random.choices(files, k=4)
         images_list = [os.path.join(images_dir, a) for a in selected]
         labels_list = [os.path.join(labels_dir, a.replace("jpg", "txt")) for a in selected]
