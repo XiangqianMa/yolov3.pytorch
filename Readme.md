@@ -2,7 +2,7 @@
 
 > 本仓库为在已有的优秀的yolvo3的实现上，为方便自己使用修改得到。目前只是一个很初级的版本，性能尚有不足，后续将持续改进。
 
-![](Readme/002409.jpg)
+<div align=center><img src="Readme/002409.jpg" style="zoom:110%;" /></div>
 
 ## 数据集
 
@@ -97,9 +97,9 @@ CUDA_VISIBLE_DEVICES=0 python test.py
 
 检测结果将被存放在`data/test_results`文件夹内。结果如下：
 
-![](Readme/000283.jpg)
+<div align=center><img src="Readme/000283.jpg" style="zoom:80%;" /></div>
 
-![](Readme/000313.jpg)
+<div align=center><img src="Readme/000313.jpg" style="zoom:80%;" /></div>
 
 ## 自定义参数
 
