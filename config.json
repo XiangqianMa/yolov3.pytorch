@@ -34,9 +34,9 @@
     "std": [0.229, 0.224, 0.225],
     "normalize": false,
     "multi_scale": true,
-    "mosaic": true,
+    "mosaic": false,
     "dataset_format": "coco",
-    "augment": true,
+    "augment": false,
     "train_augmentation": 
     {
         "ShiftScaleRotate":
@@ -72,7 +72,7 @@
                 "class_scale": 1.0,
                 "object_scale": 1.0,
                 "noobject_scale": 1.0,
-                "ignore_thresh": 0.3,
+                "ignore_thresh": 0.5,
                 "bbox_loss": "raw",
                 "iou_type": "iou"
             }

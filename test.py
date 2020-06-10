@@ -50,12 +50,12 @@ class Test(object):
 
 if __name__ == "__main__":
     model_type = "darknet"
-    model_cfg = "cfg/model_cfg/yolov3-hand.cfg"
+    model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
     image_size = 416
     iou_type = "iou"
-    weight_path = "checkpoints/backup/log-2020-06-01T23-52-23/weights/yolov3_79.pth"
-    images_root = "data/hand/test"
-    annotations_root = "data/hand/test_txt"
+    weight_path = "/home/mxq/Downloads/yolov3_199.pth"
+    images_root = "data/voc/test"
+    annotations_root = "data/voc/test_txt"
 
     test = Test(model_type, model_cfg, image_size, weight_path, images_root, annotations_root, iou_type=iou_type)
     precision, recall, AP, f1, ap_class = test()

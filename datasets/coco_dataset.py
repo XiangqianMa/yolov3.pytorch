@@ -135,12 +135,13 @@ class COCODataset(Dataset):
         """
         categories_id = []
         bboxes = []
-        with open(txt_path, 'r') as f:
-            for line in f.readlines():
-                annotation_line = line.split(' ')
-                category_id, center_x, center_y, width, height = int(annotation_line[0]), float(annotation_line[1]), float(annotation_line[2]), float(annotation_line[3]), float(annotation_line[4])
-                categories_id.append(category_id)
-                bboxes.append([center_x, center_y, width, height])
+        if os.path.isfile(txt_path):
+            with open(txt_path, 'r') as f:
+                for line in f.readlines():
+                    annotation_line = line.split(' ')
+                    category_id, center_x, center_y, width, height = int(annotation_line[0]), float(annotation_line[1]), float(annotation_line[2]), float(annotation_line[3]), float(annotation_line[4])
+                    categories_id.append(category_id)
+                    bboxes.append([center_x, center_y, width, height])
         return categories_id, bboxes
 
     def __len__(self):

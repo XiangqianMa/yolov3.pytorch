@@ -115,9 +115,9 @@ class Detect(object):
 if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
-    image_size = 480
+    image_size = 512
     iou_type = "iou"
-    weight_path = "checkpoints/backup/yolov3_204.pth"
+    weight_path = "/home/mxq/Downloads/yolov3_199.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
     id_to_name_file = "data/voc/categories_id_to_name.json"
