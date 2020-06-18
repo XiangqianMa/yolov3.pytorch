@@ -5,18 +5,24 @@
     "image_size": 416,
 
     "optimizer": "SGD",
-    "lr": 1e-4,
+    "lr": 1e-3,
+    "lr_after_freeze": 1e-4,
     "weight_decay": 4e-5,
     "gradient_accumulation": null,
 
-    "batch_size": 6,
+    "batch_size": 12,
     "start_epoch": 0,
     "epoch": 200,
+    "freeze_backbone": false,
+    "freeze_epoch": 50,
 
     "lr_scheduler_type": "MultiStepLR",
     "step_size": 60,
+    "step_size_after_freeze": 60,
     "restart_step": 120,
+    "restart_step_after_freeze": 50,
     "multi_step": [150, 170],
+    "multi_step_after_freeze": [150, 170],
 
     "log_iteration": 10,
     "save_weight_interval": 5,

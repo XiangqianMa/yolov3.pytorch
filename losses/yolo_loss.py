@@ -163,8 +163,8 @@ class YOLOLoss(nn.Module):
                 # Loss: 在计算定位损失和类别损失时，使用掩膜过滤掉未匹配上目标的预测框（计算置信度损失不用过滤）
                 loss_x = (box_loss_scale * self.bce_loss(center_x[object_mask], target_x[object_mask])).mean()
                 loss_y = (box_loss_scale * self.bce_loss(center_y[object_mask], target_y[object_mask])).mean()
-                loss_w = (box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
-                loss_h = (box_loss_scale * self.mse_loss(height[object_mask], target_h[object_mask])).mean()
+                loss_w = (0.5 * box_loss_scale * self.mse_loss(width[object_mask], target_w[object_mask])).mean()
+                loss_h = (0.5 * box_loss_scale * self.mse_loss(height[object_mask], target_h[object_mask])).mean()
                 loss_bbox = loss_x + loss_y + loss_w + loss_h
             elif self.bbox_loss == 'GIoU':
                 # 预测坐标取相对于特征图左上角的偏移量，width、height取相对于特征图的像素个数

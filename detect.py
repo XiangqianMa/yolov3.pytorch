@@ -115,9 +115,9 @@ class Detect(object):
 if __name__ == "__main__":
     model_type = "darknet"
     model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
-    image_size = 512
+    image_size = 416
     iou_type = "iou"
-    weight_path = "/home/mxq/Downloads/yolov3_199.pth"
+    weight_path = "/home/mxq/Downloads/yolov3_349.pth"
     image_root = "data/test_images"
     image_path = "data/test_images/000000217060.jpg"
     id_to_name_file = "data/voc/categories_id_to_name.json"
@@ -133,6 +133,6 @@ if __name__ == "__main__":
         iou_type=iou_type
     )
 
-    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.5, 0.5)
+    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.8, 0.3)
     pass
 

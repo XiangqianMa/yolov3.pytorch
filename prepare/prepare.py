@@ -15,15 +15,18 @@ class Prepare(object):
     def __init__(self):
         pass
 
-    def create_model(self, model_type, model_cfg, image_size, pretrained_weight=None):
+    def create_model(self, model_type, model_cfg, image_size, pretrained_weight=None, freeze_backone=False):
         """创建模型
         Args:
             model_type: str, 模型类型
             cfg: 网络结构配置
             pretrained_weight: 预训练权重的路径
         """
-        print('Loading model cfg: {}'.format(model_cfg))
+        print('@ Loading model cfg: {}'.format(model_cfg))
         model = GetModel(model_type).get_model(model_cfg=model_cfg, image_size=image_size, pretrained_weight=pretrained_weight)
+        if freeze_backone:
+            print('@ Freezing backbone.')
+            model.freeze_backbone()
         model_info(model, report='summary')
         model = torch.nn.DataParallel(model).cuda()
         return model
@@ -54,7 +57,7 @@ class Prepare(object):
         criterion = GetLoss(loss_type=loss_type, loss_weights=loss_weights)
         return criterion
 
-    def create_optimizer(self, model, config):
+    def create_optimizer(self, model, optimizer_type='SGD', lr=1e-3, weight_decay=0):
         """返回优化器
 
         Args:
@@ -63,17 +66,17 @@ class Prepare(object):
         Return:
             optimizer: 优化器
         """
-        print('Creating optimizer: %s' % config["optimizer"])
-        if config["optimizer"] == 'Adam':
+        print('Creating optimizer: %s' % optimizer_type)
+        if optimizer_type == 'Adam':
             optimizer = optim.Adam(
                 [
-                    {'params': model.module.parameters(), 'lr': config["lr"]}
-                ], weight_decay=config["weight_decay"])
-        elif config["optimizer"] == 'SGD':
+                    {'params': filter(lambda p: p.requires_grad, model.module.parameters()), 'lr': lr}
+                ], weight_decay=weight_decay)
+        elif optimizer_type == 'SGD':
             optimizer = optim.SGD(
                 [
-                    {'params': model.module.parameters(), 'lr': config["lr"]}
-                ], weight_decay=config["weight_decay"], momentum=0.9)
+                    {'params': filter(lambda p: p.requires_grad, model.module.parameters()), 'lr': lr}
+                ], weight_decay=weight_decay, momentum=0.9)
         else:
             raise NotImplementedError("Please supply a right optimizer type.")
 

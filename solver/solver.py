@@ -63,6 +63,15 @@ class Solver:
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
+    def update_model(self, model):
+        self.model = model
+
+    def update_optimizer(self, optimizer):
+        self.optimizer = optimizer
+
+    def update_lr_scheduler(self, lr_scheduler):
+        self.lr_scheduler = lr_scheduler
+
     def __valid_epoch__(self, epoch):
         """
         完成一个epoch的训练以后使用验证集进行验证

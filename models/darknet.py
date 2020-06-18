@@ -37,6 +37,24 @@ class Darknet(nn.Module):
             yolo_outputs = torch.cat(yolo_outputs, 1)
         return yolo_outputs
 
+    def freeze_backbone(self):
+        """
+        冻结backbone的梯度
+        """
+        for i in range(75):
+            current_module = self.module_list[i]
+            for param in current_module.parameters():
+                param.requires_grad = False
+    
+    def unfreeze_backbone(self):
+        """
+        解冻backbone的梯度
+        """
+        for i in range(75):
+            current_module = self.module_list[i]
+            for param in current_module.parameters():
+                param.requires_grad = True
+
     def load_darknet_weights(self, weights_path):
         """Parses and loads the weights stored in 'weights_path'"""
 
@@ -117,3 +135,13 @@ class Darknet(nn.Module):
                 conv_layer.weight.data.cpu().numpy().tofile(fp)
 
         fp.close()
+
+
+if __name__ == "__main__":
+    config_path = "cfg/model_cfg/yolov3.cfg"
+    darknet = Darknet(config_path)
+
+    darknet.freeze_backbone()
+
+    while True:
+        continue
