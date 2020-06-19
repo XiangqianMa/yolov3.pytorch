@@ -27,64 +27,62 @@ class Detect(object):
 
         self.__prepare_model__()
 
-    def detect_single_image(self, image_path, mean, std, conf_thres=0.5, nms_thres=0.5):
-        print('~' * 10 + image_path.split('/')[-1] + '~' * 10)
-        image, image_tensor = self.__prepare_image__(image_path, mean, std)
-        with torch.no_grad():
-            torch.cuda.synchronize()
-            start_time = timeit.default_timer()
-            predict = self.model(image_tensor)
-            torch.cuda.synchronize()
-            end_time = timeit.default_timer()
-            print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
-            start_time = timeit.default_timer()
-            predict = non_max_suppression(predict, conf_thres, nms_thres, iou_type=self.iou_type, 
-                                          width=self.image_size, height=self.image_size)[0]
+    def detect_camera(self, mean, std, conf_thres=0.5, nms_thres=0.5):
+        capture = cv2.VideoCapture(0)
+        
+        while True:
+            _, frame = capture.read()
+            image, image_tensor = self.__prepare_image__(frame, mean, std)
+            with torch.no_grad():
+                torch.cuda.synchronize()
+                start_time = timeit.default_timer()
+                predict = self.model(image_tensor)
+                torch.cuda.synchronize()
+                end_time = timeit.default_timer()
+                print("@ Inference and Boxes Analysis took %d ms." % ((end_time - start_time) * 1000))
+                start_time = timeit.default_timer()
+                predict = non_max_suppression(predict, conf_thres, nms_thres, iou_type=self.iou_type, 
+                                            width=self.image_size, height=self.image_size)[0]
+                if predict is not None:
+                    predict_score = predict[:, 4] * predict[:, 5]
+                    predict = predict[predict_score > conf_thres] 
+                end_time = timeit.default_timer()
+                print("@ NMS took %d ms." % ((end_time - start_time) * 1000))
+
             if predict is not None:
-                predict_score = predict[:, 4] * predict[:, 5]
-                predict = predict[predict_score > conf_thres] 
-            end_time = timeit.default_timer()
-            print("@ NMS took %d ms." % ((end_time - start_time) * 1000))
-
-        if predict is not None:
-            # 坐标为[x1, y1, x2, y2]形式
-            predict = predict.cpu().detach().numpy()
-            predict = rescale_boxes(predict, self.image_size, image.shape[:2])
-            # [x1, y1, x2, y2] -> [x1, y1, w, h]
-            predict[..., :4] = corner_to_upleft(predict[..., :4])
-            predict_boxes = predict[..., :4].tolist()
-            predict_conf = predict[..., 4].tolist()
-            predict_id = predict[..., -1].astype(int).tolist()
-            self.__log_predicts__(predict_conf, predict_id)
-            annotations = {
-                'image': image,
-                'bboxes': predict_boxes,
-                'category_id': predict_id,
-            }
-            image_with_bboxes = visualize(annotations, self.id_to_name, show=False)
-            image_with_bboxes = Image.fromarray(image_with_bboxes)
-            image_save_path = os.path.join(self.save_path, image_path.split('/')[-1])
-            print("@ Saving image to %s." % image_save_path)
-            image_with_bboxes.save(image_save_path)
-        else:
-            print("@ No object in %s." % image_path)
-        print("\n")
-        pass
-
-    def detect_multi_images(self, image_dir, mean, std, conf_thres=0.5, nms_thres=0.5):
-        # 序列化检测的方式，非batch
-        images_list = os.listdir(image_dir)
-        for image_name in images_list:
-            image_path = os.path.join(image_dir, image_name)
-            self.detect_single_image(image_path, mean, std, conf_thres, nms_thres)
+                # 坐标为[x1, y1, x2, y2]形式
+                predict = predict.cpu().detach().numpy()
+                predict = rescale_boxes(predict, self.image_size, image.shape[:2])
+                # [x1, y1, x2, y2] -> [x1, y1, w, h]
+                predict[..., :4] = corner_to_upleft(predict[..., :4])
+                predict_boxes = predict[..., :4].tolist()
+                predict_conf = predict[..., 4].tolist()
+                predict_id = predict[..., -1].astype(int).tolist()
+                self.__log_predicts__(predict_conf, predict_id)
+                annotations = {
+                    'image': image,
+                    'bboxes': predict_boxes,
+                    'category_id': predict_id,
+                }
+                image_with_bboxes = visualize(annotations, self.id_to_name, show=False)
+            else:
+                image_with_bboxes = image
+                print("@ No object in")
+            image_with_bboxes = cv2.cvtColor(image_with_bboxes, cv2.COLOR_RGB2BGR)
+            cv2.namedWindow("Detect", 0)
+            cv2.imshow("Detect", image_with_bboxes)
+            time.sleep(50e-3)
+            if cv2.waitKey(1) == ord('q'):
+                break
+        
         pass
     
     def __log_predicts__(self, predict_conf, predict_id):
         for index, (conf, class_id) in enumerate(zip(predict_conf, predict_id)):
             print("  >> Object_%d: %s - %.4f." % (index, self.id_to_name[str(class_id)], conf))
 
-    def __prepare_image__(self, image_path, mean, std):
-        image = Image.open(image_path).convert("RGB")
+    def __prepare_image__(self, image, mean, std):
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         transform_compose = T.Compose(
             [
                 T.ToTensor(),
@@ -138,6 +136,5 @@ if __name__ == "__main__":
         iou_type=iou_type
     )
 
-    detect.detect_multi_images(image_root, config["mean"], config["std"], 0.8, 0.3)
+    detect.detect_camera(config["mean"], config["std"], 0.8, 0.3)
     pass
-

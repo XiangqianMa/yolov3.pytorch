@@ -27,7 +27,7 @@ class Test(object):
         self.__prepare_data__()
 
     def __call__(self):
-        return evaluate(self.model, self.dataloader, 0.5, 0.001, 0.5, self.image_size, iou_type=self.iou_type)
+        return evaluate(self.model, self.dataloader, 0.5, 0.5, 0.5, self.image_size, iou_type=self.iou_type)
 
     def __prepare_data__(self):
         dataset = COCODataset(self.images_root, self.annotations_root, self.image_size, mean=None, std=None)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
     image_size = 416
     iou_type = "iou"
-    weight_path = "/home/mxq/Downloads/yolov3_199.pth"
+    weight_path = "/home/mxq/Downloads/yolov3_194.pth"
     images_root = "data/voc/test"
     annotations_root = "data/voc/test_txt"
 

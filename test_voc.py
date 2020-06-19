@@ -130,7 +130,7 @@ if __name__ == "__main__":
     model_cfg = "cfg/model_cfg/yolov3-voc.cfg"
     image_size = 416
     iou_type = "iou"
-    weight_path = "checkpoints/backup/yolov3_189.pth"
+    weight_path = "/home/mxq/Downloads/yolov3_194.pth"
     id_to_name_file = "data/voc/categories_id_to_name.json"
     cache_path = "cache"
     data_root = "data/voc/test"

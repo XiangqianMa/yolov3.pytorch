@@ -27,7 +27,8 @@ def non_max_suppression(prediction, conf_thres=0.5, nms_thres=0.5, iou_type="iou
             continue
 
         # 每个预测框的最终得分：confidence * 其所属的类别的分数，即P(class|exist_object)
-        score = image_prediction[..., 4] * image_prediction[..., 5:].max(1)[0]
+        # score = image_prediction[..., 4] * image_prediction[..., 5:].max(1)[0]
+        score = image_prediction[..., 4]
         # 按照得分对预测框从大到小进行排序
         image_prediction = image_prediction[(-score).argsort()]
         class_confidence, class_preds = image_prediction[..., 5:].max(1, keepdim=True)  # 预测的类别得分以及类别编号
